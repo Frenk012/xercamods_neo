@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "xerca.xercamusic.mixin",
   "compatibilityLevel": "JAVA_21",
+  "refmap": "xercamusic.refmap.json",
   "mixins": [
     "ItemStackComponentizationFixMixin",
     "V1460Mixin"

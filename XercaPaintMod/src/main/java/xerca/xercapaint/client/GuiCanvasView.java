@@ -14,7 +14,7 @@ import xerca.xercapaint.item.Items;
 
 import java.util.List;
 
-@net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+@net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
 public class GuiCanvasView extends Screen {
     private int canvasX;
     private int canvasY = 40;
@@ -42,11 +42,11 @@ public class GuiCanvasView extends Screen {
         this.easel = easel;
         this.player = Minecraft.getInstance().player;
 
-        List<Integer> stackPixels = canvasStack.get(Items.CANVAS_PIXELS);
+        List<Integer> stackPixels = canvasStack.get(Items.CANVAS_PIXELS.get());
         if (stackPixels != null) {
-            this.authorName = canvasStack.get(Items.CANVAS_AUTHOR);
-            this.canvasTitle = canvasStack.getOrDefault(Items.CANVAS_TITLE, "");
-            this.generation = canvasStack.getOrDefault(Items.CANVAS_GENERATION, 0);
+            this.authorName = canvasStack.get(Items.CANVAS_AUTHOR.get());
+            this.canvasTitle = canvasStack.getOrDefault(Items.CANVAS_TITLE.get(), "");
+            this.generation = canvasStack.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
 
             this.pixels = stackPixels.stream().mapToInt(i -> i).toArray();
         }

@@ -2,7 +2,7 @@ package xerca.xercapaint;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.nbt.CompoundTag;
@@ -42,7 +42,7 @@ public class CommandExport {
         }
 
         ExportPaintingPacket pack = new ExportPaintingPacket(name);
-        ServerPlayNetworking.send(player, pack);
+        PacketDistributor.sendToPlayer(player, pack);
         return 1;
     }
 
@@ -57,14 +57,14 @@ public class CommandExport {
 
         for (ItemStack s : player.getHandSlots()) {
             if (s.getItem() instanceof ItemCanvas) {
-                List<Integer> pixels = s.get(Items.CANVAS_PIXELS);
-                String canvasId = s.get(Items.CANVAS_ID);
+                List<Integer> pixels = s.get(Items.CANVAS_PIXELS.get());
+                String canvasId = s.get(Items.CANVAS_ID.get());
                 if (pixels != null && canvasId != null) {
                     try {
-                        int version = s.getOrDefault(Items.CANVAS_VERSION, 1);
-                        int generation = s.getOrDefault(Items.CANVAS_GENERATION, 0);
-                        String title = s.get(Items.CANVAS_TITLE);
-                        String author = s.get(Items.CANVAS_AUTHOR);
+                        int version = s.getOrDefault(Items.CANVAS_VERSION.get(), 1);
+                        int generation = s.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
+                        String title = s.get(Items.CANVAS_TITLE.get());
+                        String author = s.get(Items.CANVAS_AUTHOR.get());
 
                         CompoundTag tag = new CompoundTag();
 

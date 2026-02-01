@@ -8,8 +8,8 @@ import xerca.xercapaint.Mod;
 import xerca.xercapaint.PaletteUtil;
 
 public record PaletteUpdatePacket(PaletteUtil.CustomColor[] paletteColors) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<PaletteUpdatePacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("palette_update"));
-    public static final StreamCodec<FriendlyByteBuf, PaletteUpdatePacket> PACKET_CODEC = StreamCodec.ofMember(PaletteUpdatePacket::encode, PaletteUpdatePacket::decode);
+    public static final CustomPacketPayload.Type<PaletteUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("palette_update"));
+    public static final StreamCodec<FriendlyByteBuf, PaletteUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(PaletteUpdatePacket::encode, PaletteUpdatePacket::decode);
 
     public FriendlyByteBuf encode(FriendlyByteBuf buf) {
         for (PaletteUtil.CustomColor color : paletteColors) {
@@ -28,6 +28,6 @@ public record PaletteUpdatePacket(PaletteUtil.CustomColor[] paletteColors) imple
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

@@ -9,8 +9,8 @@ import xerca.xercapaint.Mod;
 
 public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version, int easelId,
                                      CanvasType canvasType) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<CanvasMiniUpdatePacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("canvas_mini_update"));
-    public static final StreamCodec<FriendlyByteBuf, CanvasMiniUpdatePacket> PACKET_CODEC = StreamCodec.ofMember(CanvasMiniUpdatePacket::encode, CanvasMiniUpdatePacket::decode);
+    public static final CustomPacketPayload.Type<CanvasMiniUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("canvas_mini_update"));
+    public static final StreamCodec<FriendlyByteBuf, CanvasMiniUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(CanvasMiniUpdatePacket::encode, CanvasMiniUpdatePacket::decode);
 
     public FriendlyByteBuf encode(FriendlyByteBuf buf) {
         buf.writeInt(easelId);
@@ -34,6 +34,6 @@ public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version,
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

@@ -1,6 +1,5 @@
 package xerca.xercamusic.common.item;
 
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
 import xerca.xercamusic.client.ClientStuff;
 import xerca.xercamusic.common.Mod;
@@ -23,7 +23,6 @@ import xerca.xercamusic.common.block.Blocks;
 import xerca.xercamusic.common.packets.clientbound.TripleNoteClientPacket;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.List;
 
 import static xerca.xercamusic.common.Mod.onlyRunOnClient;
@@ -54,7 +53,7 @@ public class ItemInstrument extends Item implements IItemInstrument {
     public static InteractionResultHolder<ItemStack> useInstrument(@NotNull Level worldIn, @NotNull Player playerIn, @NotNull InteractionHand handIn) {
         final ItemStack heldItem = playerIn.getItemInHand(handIn);
         ItemStack off = playerIn.getOffhandItem();
-        if (handIn == InteractionHand.MAIN_HAND && off.getItem() == Items.MUSIC_SHEET) {
+        if (handIn == InteractionHand.MAIN_HAND && off.getItem() == Items.MUSIC_SHEET.get()) {
             if (!worldIn.isClientSide) {
                 IItemInstrument.playMusic(worldIn, playerIn, true);
             }
@@ -70,7 +69,7 @@ public class ItemInstrument extends Item implements IItemInstrument {
         Level world = context.getLevel();
         BlockPos blockpos = context.getClickedPos();
         BlockState blockState = world.getBlockState(blockpos);
-        if (blockState.getBlock() == Blocks.MUSIC_BOX && !blockState.getValue(BlockMusicBox.HAS_INSTRUMENT)) {
+        if (blockState.getBlock() == Blocks.MUSIC_BOX.get() && !blockState.getValue(BlockMusicBox.HAS_INSTRUMENT)) {
             ItemStack itemstack = context.getItemInHand();
             if (!world.isClientSide) {
                 BlockMusicBox.insertInstrument(world, blockpos, blockState, itemstack.getItem());
@@ -91,7 +90,9 @@ public class ItemInstrument extends Item implements IItemInstrument {
             int note2 = MIN_NOTE + minOctave * 12 + world.random.nextInt((maxOctave + 1) * 12 - minOctave * 12);
             int note3 = MIN_NOTE + minOctave * 12 + world.random.nextInt((maxOctave + 1) * 12 - minOctave * 12);
 
-            Collection<ServerPlayer> players = PlayerLookup.around((ServerLevel) target.level(), target.position(), 24.D);
+            // Find players within 24 blocks using AABB
+            AABB area = new AABB(target.position().subtract(24, 24, 24), target.position().add(24, 24, 24));
+            List<ServerPlayer> players = ((ServerLevel) target.level()).getEntitiesOfClass(ServerPlayer.class, area);
             TripleNoteClientPacket packet = new TripleNoteClientPacket(note1, note2, note3, instrument, target);
             for (ServerPlayer player : players) {
                 sendToClient(player, packet);

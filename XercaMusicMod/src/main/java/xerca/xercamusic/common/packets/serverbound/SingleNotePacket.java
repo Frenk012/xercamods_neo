@@ -8,20 +8,23 @@ import xerca.xercamusic.common.Mod;
 import xerca.xercamusic.common.item.IItemInstrument;
 import xerca.xercamusic.common.item.Items;
 
+import java.util.List;
+
 public record SingleNotePacket(int note, IItemInstrument instrumentItem, boolean isStop,
                                float volume) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<SingleNotePacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("single_note"));
-    public static final StreamCodec<FriendlyByteBuf, SingleNotePacket> PACKET_CODEC = StreamCodec.ofMember(SingleNotePacket::encode, SingleNotePacket::decode);
+    public static final CustomPacketPayload.Type<SingleNotePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("single_note"));
+    public static final StreamCodec<FriendlyByteBuf, SingleNotePacket> STREAM_CODEC = StreamCodec.ofMember(SingleNotePacket::encode, SingleNotePacket::decode);
 
     public static SingleNotePacket decode(FriendlyByteBuf buf) {
         int note = buf.readInt();
         int instrumentId = buf.readInt();
         boolean isStop = buf.readBoolean();
         float volume = buf.readFloat();
-        if (instrumentId < 0 || instrumentId >= Items.INSTRUMENTS.size()) {
+        List<IItemInstrument> instruments = Items.getInstruments();
+        if (instrumentId < 0 || instrumentId >= instruments.size()) {
             throw new IndexOutOfBoundsException("Invalid instrumentId: " + instrumentId);
         }
-        IItemInstrument instrumentItem = Items.INSTRUMENTS.get(instrumentId);
+        IItemInstrument instrumentItem = instruments.get(instrumentId);
         return new SingleNotePacket(note, instrumentItem, isStop, volume);
     }
 
@@ -34,6 +37,6 @@ public record SingleNotePacket(int note, IItemInstrument instrumentItem, boolean
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

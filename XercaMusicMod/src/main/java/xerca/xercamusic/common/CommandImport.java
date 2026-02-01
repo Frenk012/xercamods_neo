@@ -134,7 +134,7 @@ public final class CommandImport {
 
     private static boolean giveImportedSheetToPlayer(CompoundTag tag, ServerPlayer player) {
         if (player.isCreative()) {
-            ItemStack itemStack = new ItemStack(Items.MUSIC_SHEET);
+            ItemStack itemStack = new ItemStack(Items.MUSIC_SHEET.get());
             importIntoStack(itemStack, tag);
             player.addItem(itemStack);
             return true;
@@ -152,28 +152,28 @@ public final class CommandImport {
 
 
     private static void importIntoStack(ItemStack sheet, CompoundTag tag) {
-        sheet.set(Items.SHEET_ID, tag.getUUID(KEY_ID));
-        sheet.set(Items.SHEET_GENERATION, tag.getInt(KEY_GENERATION));
-        sheet.set(Items.SHEET_VERSION, tag.getInt(KEY_VERSION));
-        sheet.set(Items.SHEET_LENGTH, tag.getInt(KEY_LENGTH));
+        sheet.set(Items.SHEET_ID.get(), tag.getUUID(KEY_ID));
+        sheet.set(Items.SHEET_GENERATION.get(), tag.getInt(KEY_GENERATION));
+        sheet.set(Items.SHEET_VERSION.get(), tag.getInt(KEY_VERSION));
+        sheet.set(Items.SHEET_LENGTH.get(), tag.getInt(KEY_LENGTH));
         if (tag.contains(KEY_BPS, Tag.TAG_BYTE)) {
-            sheet.set(Items.SHEET_BPS, tag.getByte(KEY_BPS));
+            sheet.set(Items.SHEET_BPS.get(), tag.getByte(KEY_BPS));
         }
         if (tag.contains(KEY_PREV_INSTRUMENT_LOCKED, Tag.TAG_BYTE)) {
-            sheet.set(Items.SHEET_PREV_INSTRUMENT_LOCKED, tag.getBoolean(KEY_PREV_INSTRUMENT_LOCKED));
+            sheet.set(Items.SHEET_PREV_INSTRUMENT_LOCKED.get(), tag.getBoolean(KEY_PREV_INSTRUMENT_LOCKED));
         }
         if (tag.contains(KEY_PREV_INSTRUMENT, Tag.TAG_BYTE)) {
-            sheet.set(Items.SHEET_PREV_INSTRUMENT, tag.getByte(KEY_PREV_INSTRUMENT));
+            sheet.set(Items.SHEET_PREV_INSTRUMENT.get(), tag.getByte(KEY_PREV_INSTRUMENT));
         }
         if (tag.contains(KEY_TITLE, Tag.TAG_STRING) && tag.contains(KEY_AUTHOR, Tag.TAG_STRING)) {
-            sheet.set(Items.SHEET_TITLE, tag.getString(KEY_TITLE));
-            sheet.set(Items.SHEET_AUTHOR, tag.getString(KEY_AUTHOR));
+            sheet.set(Items.SHEET_TITLE.get(), tag.getString(KEY_TITLE));
+            sheet.set(Items.SHEET_AUTHOR.get(), tag.getString(KEY_AUTHOR));
         }
         if (tag.contains(KEY_HIGHLIGHT_INTERVAL, Tag.TAG_BYTE)) {
-            sheet.set(Items.SHEET_HIGHLIGHT_INTERVAL, tag.getByte(KEY_HIGHLIGHT_INTERVAL));
+            sheet.set(Items.SHEET_HIGHLIGHT_INTERVAL.get(), tag.getByte(KEY_HIGHLIGHT_INTERVAL));
         }
         if (tag.contains(KEY_VOLUME, Tag.TAG_FLOAT)) {
-            sheet.set(Items.SHEET_VOLUME, tag.getFloat(KEY_VOLUME));
+            sheet.set(Items.SHEET_VOLUME.get(), tag.getFloat(KEY_VOLUME));
         }
     }
 }

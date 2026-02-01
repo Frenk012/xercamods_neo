@@ -148,8 +148,8 @@ public class GuiMusicSheet extends Screen {
     GuiMusicSheet(Player player, ItemStack sheet, Component title) {
         super(title);
         this.editingPlayer = player;
-        UUID sheetId = sheet.get(Items.SHEET_ID);
-        this.version = sheet.getOrDefault(Items.SHEET_VERSION, -1);
+        UUID sheetId = sheet.get(Items.SHEET_ID.get());
+        this.version = sheet.getOrDefault(Items.SHEET_VERSION.get(), -1);
         if (sheetId != null && this.version >= 0) {
             // Read notes from cache or server using id
             MusicManager.MusicData data = MusicManagerClient.getMusicData(sheetId, version);
@@ -157,19 +157,19 @@ public class GuiMusicSheet extends Screen {
                 notes.addAll(data.notes());
             }
 
-            this.lengthBeats = (short) (int) sheet.getOrDefault(Items.SHEET_LENGTH, 0);
-            this.bps = sheet.getOrDefault(Items.SHEET_BPS, (byte) 8);
-            this.volume = sheet.getOrDefault(Items.SHEET_VOLUME, 1.f);
-            this.generation = sheet.getOrDefault(Items.SHEET_GENERATION, 0);
+            this.lengthBeats = (short) (int) sheet.getOrDefault(Items.SHEET_LENGTH.get(), 0);
+            this.bps = sheet.getOrDefault(Items.SHEET_BPS.get(), (byte) 8);
+            this.volume = sheet.getOrDefault(Items.SHEET_VOLUME.get(), 1.f);
+            this.generation = sheet.getOrDefault(Items.SHEET_GENERATION.get(), 0);
             this.isSigned = generation > 0;
-            this.noteTitle = sheet.getOrDefault(Items.SHEET_TITLE, "");
-            String authorName = sheet.getOrDefault(Items.SHEET_AUTHOR, "");
-            this.prevInsLocked = sheet.getOrDefault(Items.SHEET_PREV_INSTRUMENT_LOCKED, false);
-            Byte prevIns = sheet.get(Items.SHEET_PREV_INSTRUMENT);
+            this.noteTitle = sheet.getOrDefault(Items.SHEET_TITLE.get(), "");
+            String authorName = sheet.getOrDefault(Items.SHEET_AUTHOR.get(), "");
+            this.prevInsLocked = sheet.getOrDefault(Items.SHEET_PREV_INSTRUMENT_LOCKED.get(), false);
+            Byte prevIns = sheet.get(Items.SHEET_PREV_INSTRUMENT.get());
             if (prevIns != null) {
                 this.previewInstrument = prevIns;
             }
-            this.highlightInterval = sheet.getOrDefault(Items.SHEET_HIGHLIGHT_INTERVAL, (byte) 12);
+            this.highlightInterval = sheet.getOrDefault(Items.SHEET_HIGHLIGHT_INTERVAL.get(), (byte) 12);
 
             if (authorName.equals(player.getName().getString())) {
                 this.selfSigned = true;
@@ -222,7 +222,7 @@ public class GuiMusicSheet extends Screen {
     private int getCurrentOffhandInsIndex() {
         Item offhand = editingPlayer.getOffhandItem().getItem();
         if (offhand instanceof IItemInstrument ins) {
-            return Items.INSTRUMENTS.indexOf(ins);
+            return Items.getInstruments().indexOf(ins);
         }
         return -1;
     }
@@ -248,11 +248,11 @@ public class GuiMusicSheet extends Screen {
             }
 
             IItemInstrument.InsSound noteSound;
-            if (previewInstrument >= 0 && previewInstrument < Items.INSTRUMENTS.size()) {
-                IItemInstrument ins = Items.INSTRUMENTS.get(previewInstrument);
+            if (previewInstrument >= 0 && previewInstrument < Items.getInstruments().size()) {
+                IItemInstrument ins = Items.getInstruments().get(previewInstrument);
                 noteSound = ins.getSound(note);
             } else {
-                noteSound = ((IItemInstrument) Items.HARP_MC).getSound(note);
+                noteSound = ((IItemInstrument) Items.HARP_MC.get()).getSound(note);
             }
             if (noteSound == null) {
                 Mod.LOGGER.warn("noteSound not found - noteId: {} vol: {}", noteId, volume);
@@ -301,8 +301,8 @@ public class GuiMusicSheet extends Screen {
         if (!neighbor.isEmpty() && neighbor.getItem() instanceof ItemMusicSheet) {
             byte neighborBPS = ItemMusicSheet.getBPS(neighbor);
             if (neighborBPS == bps) {
-                UUID uuid = neighbor.get(Items.SHEET_ID);
-                int ver = neighbor.getOrDefault(Items.SHEET_VERSION, -1);
+                UUID uuid = neighbor.get(Items.SHEET_ID.get());
+                int ver = neighbor.getOrDefault(Items.SHEET_VERSION.get(), -1);
                 if (uuid != null && ver >= 0) {
                     MusicManagerClient.checkMusicDataAndRun(uuid, ver, () -> {
                         MusicManager.MusicData data = MusicManagerClient.getMusicData(uuid, ver);
@@ -577,7 +577,7 @@ public class GuiMusicSheet extends Screen {
     private void playMetronomeTick() {
         try {
             onlyCallOnClient(() -> () ->
-                    ClientStuff.playNote(SoundEvents.TICK, editingPlayer.getX(), editingPlayer.getY(), editingPlayer.getZ(), SoundSource.PLAYERS, 1.0f, 0.975f + editingPlayer.level().random.nextFloat() * 0.05f, (byte) -1));
+                    ClientStuff.playNote(SoundEvents.TICK.get(), editingPlayer.getX(), editingPlayer.getY(), editingPlayer.getZ(), SoundSource.PLAYERS, 1.0f, 0.975f + editingPlayer.level().random.nextFloat() * 0.05f, (byte) -1));
         } catch (Exception e) {
             Mod.LOGGER.error("Exception in playMetronomeTick", e);
         }
@@ -594,11 +594,11 @@ public class GuiMusicSheet extends Screen {
         }
 
         IItemInstrument.InsSound insSound;
-        if (previewInstrument >= 0 && previewInstrument < Items.INSTRUMENTS.size()) {
-            IItemInstrument ins = Items.INSTRUMENTS.get(previewInstrument);
+        if (previewInstrument >= 0 && previewInstrument < Items.getInstruments().size()) {
+            IItemInstrument ins = Items.getInstruments().get(previewInstrument);
             insSound = ins.getSound(event.note);
         } else {
-            insSound = ((IItemInstrument) Items.HARP_MC).getSound(event.note);
+            insSound = ((IItemInstrument) Items.HARP_MC.get()).getSound(event.note);
         }
         if (insSound == null) {
             return null;
@@ -1787,8 +1787,8 @@ public class GuiMusicSheet extends Screen {
             midiHandler.closeDevices();
         }
 
-        if (SoundEvents.CLOSE_SCROLL != null) {
-            editingPlayer.playSound(SoundEvents.CLOSE_SCROLL, 1.0f, 0.8f + editingPlayer.level().random.nextFloat() * 0.4f);
+        if (SoundEvents.CLOSE_SCROLL.get() != null) {
+            editingPlayer.playSound(SoundEvents.CLOSE_SCROLL.get(), 1.0f, 0.8f + editingPlayer.level().random.nextFloat() * 0.4f);
         }
     }
 

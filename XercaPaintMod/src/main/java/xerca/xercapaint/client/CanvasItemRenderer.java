@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -24,22 +24,29 @@ import xerca.xercapaint.item.Items;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public class CanvasItemRenderer extends BlockEntityWithoutLevelRenderer implements BuiltinItemRendererRegistry.DynamicItemRenderer {
+public class CanvasItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation backLocation = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/birch_planks.png");
     private static final ResourceLocation emptyCanvasLocation = Mod.id("textures/block/empty.png");
 
-    public CanvasItemRenderer(BlockEntityRenderDispatcher dispatcher, EntityModelSet entityModelSet) {
-        super(dispatcher, entityModelSet);
+    public CanvasItemRenderer() {
+        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
     }
+
+    private static boolean loggedOnce = false;
 
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext displayContext, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+        if (!loggedOnce) {
+            Mod.LOGGER.info("XercaPaint: CanvasItemRenderer.renderByItem called for {}", stack.getItem());
+            loggedOnce = true;
+        }
+
         if (stack.getItem() instanceof ItemCanvas itemCanvas) {
             boolean rendered = false;
-            if (stack.get(Items.CANVAS_PIXELS) != null && RenderEntityCanvas.theInstance != null) {
-                RenderEntityCanvas.Instance canvasIns = RenderEntityCanvas.theInstance.getCanvasRendererInstance(stack, itemCanvas.getWidth(), itemCanvas.getHeight());
+            if (stack.get(Items.CANVAS_PIXELS.get()) != null) {
+                CanvasTextureManager.CanvasInstance canvasIns = CanvasTextureManager.INSTANCE.getCanvasInstance(stack, itemCanvas.getWidth(), itemCanvas.getHeight());
                 if (canvasIns != null) {
-                    canvasIns.render(null, 0, 0, matrixStack, buffer, Direction.UP, combinedLight);
+                    canvasIns.renderForItem(matrixStack, buffer, combinedLight);
                     rendered = true;
                 }
             }
@@ -59,27 +66,17 @@ public class CanvasItemRenderer extends BlockEntityWithoutLevelRenderer implemen
         final float hScale = height / 16.0f;
 
         ms.pushPose();
-        Matrix3f mn = ms.last().normal();
 
-        float xOffset = Direction.UP.getStepX();
-        float yOffset = Direction.UP.getStepY();
-        float zOffset = Direction.UP.getStepZ();
+        float xOffset = 0;
+        float yOffset = 0;
+        float zOffset = -1;
 
-        ms.last().normal().set(mn);
-
-        float f = 1.0f / 32.0f;
-        ms.translate(0.75, 0.5, 0.5);
-        if (wScale > 1 || hScale > 1) {
-            f /= 3.3f;
-        } else {
-            f /= 2.0f;
-        }
-
-        ms.mulPose(Axis.YP.rotationDegrees(180));
-
-        ms.scale(f, f, f);
-
-        RenderSystem.setShaderTexture(0, emptyCanvasLocation);
+        // Item rendering: center in unit space for BEWLR compatibility
+        float scale = 1.0f / (32.0f * Math.max(wScale, hScale));
+        ms.translate(0.5, 0.5, 0.5);
+        ms.scale(scale, scale, scale);
+        // Center the canvas
+        ms.translate(-16.0f * wScale, -16.0f * hScale, 0);
 
         Matrix4f m = ms.last().pose();
         PoseStack.Pose pose = ms.last();
@@ -123,10 +120,5 @@ public class CanvasItemRenderer extends BlockEntityWithoutLevelRenderer implemen
         addVertex(vb, m, pose, 0.0D, 0.0D, 1.0F, 0.0F, 1.0F - sideWidth, packedLight, xOffset, yOffset, zOffset);
 
         ms.popPose();
-    }
-
-    @Override
-    public void render(ItemStack stack, ItemDisplayContext displayContext, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay) {
-        renderByItem(stack, displayContext, matrices, vertexConsumers, light, overlay);
     }
 }

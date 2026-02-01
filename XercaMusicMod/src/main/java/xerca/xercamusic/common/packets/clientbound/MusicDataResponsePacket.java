@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record MusicDataResponsePacket(UUID id, int version, List<NoteEvent> notes) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<MusicDataResponsePacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("music_data_response"));
-    public static final StreamCodec<FriendlyByteBuf, MusicDataResponsePacket> PACKET_CODEC = StreamCodec.ofMember(MusicDataResponsePacket::encode, MusicDataResponsePacket::decode);
+    public static final CustomPacketPayload.Type<MusicDataResponsePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("music_data_response"));
+    public static final StreamCodec<FriendlyByteBuf, MusicDataResponsePacket> STREAM_CODEC = StreamCodec.ofMember(MusicDataResponsePacket::encode, MusicDataResponsePacket::decode);
 
     public static MusicDataResponsePacket decode(FriendlyByteBuf buf) {
         UUID id = buf.readUUID();
@@ -37,6 +37,6 @@ public record MusicDataResponsePacket(UUID id, int version, List<NoteEvent> note
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

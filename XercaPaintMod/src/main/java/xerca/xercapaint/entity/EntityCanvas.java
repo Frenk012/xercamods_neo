@@ -2,7 +2,6 @@ package xerca.xercapaint.entity;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -33,6 +32,7 @@ import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.item.Items;
 import xerca.xercapaint.packets.PictureRequestPacket;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -55,18 +55,18 @@ public class EntityCanvas extends HangingEntity {
     public static final Set<String> PICTURE_REQUESTS = Sets.newHashSet();
 
     public EntityCanvas(Level world, ItemStack stack, BlockPos pos, Direction facing, CanvasType canvasType, int rotation) {
-        super(Entities.CANVAS, world, pos);
-        String id = stack.get(Items.CANVAS_ID);
-        int version = stack.getOrDefault(Items.CANVAS_VERSION, 0);
-        String title = stack.get(Items.CANVAS_TITLE);
-        String author = stack.get(Items.CANVAS_AUTHOR);
+        super(Entities.CANVAS.get(), world, pos);
+        String id = stack.get(Items.CANVAS_ID.get());
+        int version = stack.getOrDefault(Items.CANVAS_VERSION.get(), 0);
+        String title = stack.get(Items.CANVAS_TITLE.get());
+        String author = stack.get(Items.CANVAS_AUTHOR.get());
         this.setCanvasID(id);
         this.setVersion(version);
         if (title != null && author != null) {
             this.canvasSigned = true;
             this.canvasTitle = title;
             this.canvasAuthor = author;
-            this.canvasGeneration = stack.getOrDefault(Items.CANVAS_GENERATION, 0);
+            this.canvasGeneration = stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
         } else {
             this.canvasSigned = false;
         }
@@ -77,7 +77,7 @@ public class EntityCanvas extends HangingEntity {
         Picture picture = PICTURES.get(id);
         if (picture == null || picture.version < version) {
             int[] pixels = null;
-            List<Integer> pixelList = stack.get(Items.CANVAS_PIXELS);
+            List<Integer> pixelList = stack.get(Items.CANVAS_PIXELS.get());
             if (pixelList != null) {
                 pixels = pixelList.stream().mapToInt(i -> i).toArray();
             }
@@ -102,7 +102,7 @@ public class EntityCanvas extends HangingEntity {
             if (picture == null || picture.version < getVersion()) {
                 if (!PICTURE_REQUESTS.contains(canvasID)) {
                     PICTURE_REQUESTS.add(canvasID);
-                    ClientPlayNetworking.send(new PictureRequestPacket(canvasID));
+                    PacketDistributor.sendToServer(new PictureRequestPacket(canvasID));
                 }
             }
         }
@@ -134,8 +134,8 @@ public class EntityCanvas extends HangingEntity {
     }
 
     @Override
-    public void dropItem(ServerLevel serverLevel, @Nullable Entity brokenEntity) {
-        if (serverLevel.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+    public void dropItem(@Nullable Entity brokenEntity) {
+        if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
             if (brokenEntity instanceof Player playerentity) {
                 if (playerentity.getAbilities().instabuild) {
@@ -145,30 +145,30 @@ public class EntityCanvas extends HangingEntity {
             ItemStack canvasItem;
             CanvasType canvasType = getCanvasType();
             if (canvasType == CanvasType.SMALL) {
-                canvasItem = new ItemStack(Items.ITEM_CANVAS);
+                canvasItem = new ItemStack(Items.ITEM_CANVAS.get());
             } else if (canvasType == CanvasType.LARGE) {
-                canvasItem = new ItemStack(Items.ITEM_CANVAS_LARGE);
+                canvasItem = new ItemStack(Items.ITEM_CANVAS_LARGE.get());
             } else if (canvasType == CanvasType.LONG) {
-                canvasItem = new ItemStack(Items.ITEM_CANVAS_LONG);
+                canvasItem = new ItemStack(Items.ITEM_CANVAS_LONG.get());
             } else if (canvasType == CanvasType.TALL) {
-                canvasItem = new ItemStack(Items.ITEM_CANVAS_TALL);
+                canvasItem = new ItemStack(Items.ITEM_CANVAS_TALL.get());
             } else {
                 Mod.LOGGER.error("Invalid canvas type");
                 return;
             }
 
-            canvasItem.set(Items.CANVAS_ID, getCanvasID());
-            canvasItem.set(Items.CANVAS_VERSION, getVersion());
+            canvasItem.set(Items.CANVAS_ID.get(), getCanvasID());
+            canvasItem.set(Items.CANVAS_VERSION.get(), getVersion());
             if (canvasSigned) {
-                canvasItem.set(Items.CANVAS_AUTHOR, canvasAuthor);
-                canvasItem.set(Items.CANVAS_TITLE, canvasTitle);
-                canvasItem.set(Items.CANVAS_GENERATION, canvasGeneration);
+                canvasItem.set(Items.CANVAS_AUTHOR.get(), canvasAuthor);
+                canvasItem.set(Items.CANVAS_TITLE.get(), canvasTitle);
+                canvasItem.set(Items.CANVAS_GENERATION.get(), canvasGeneration);
             }
             Picture picture = PICTURES.get(getCanvasID());
             if (picture != null) {
-                canvasItem.set(Items.CANVAS_PIXELS, Arrays.stream(picture.pixels).boxed().toList());
+                canvasItem.set(Items.CANVAS_PIXELS.get(), Arrays.stream(picture.pixels).boxed().toList());
             }
-            this.spawnAtLocation(serverLevel, canvasItem);
+            this.spawnAtLocation(canvasItem);
         }
     }
 
@@ -180,7 +180,7 @@ public class EntityCanvas extends HangingEntity {
             this.tickCounter1 = 0;
             if (this.isAlive() && !this.survives()) {
                 this.remove(RemovalReason.DISCARDED);
-                this.dropItem((ServerLevel) this.level(), null);
+                this.dropItem(null);
             }
         }
     }
@@ -339,7 +339,7 @@ public class EntityCanvas extends HangingEntity {
         CanvasType canvasType = CanvasType.fromByte(tagCompound.getByte("ctype"));
         if (canvasType == null) {
             Mod.LOGGER.error("EntityCanvas invalid ctype in readAdditionalSaveData");
-            this.kill((ServerLevel) this.level());
+            this.kill();
             return;
         }
         this.setCanvasType(canvasType);

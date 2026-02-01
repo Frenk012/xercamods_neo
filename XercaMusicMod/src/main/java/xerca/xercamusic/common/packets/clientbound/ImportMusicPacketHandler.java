@@ -1,11 +1,12 @@
 package xerca.xercamusic.common.packets.clientbound;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xerca.xercamusic.common.Mod;
 import xerca.xercamusic.common.packets.serverbound.ImportMusicSendPacket;
 import xerca.xercamusic.common.packets.serverbound.SendNotesPartToServerPacket;
@@ -17,7 +18,7 @@ import static xerca.xercamusic.client.ClientStuff.sendToServer;
 import static xerca.xercamusic.common.Mod.MAX_NOTES_IN_PACKET;
 import static xerca.xercamusic.common.item.ItemMusicSheet.KEY_NOTES;
 
-public class ImportMusicPacketHandler implements ClientPlayNetworking.PlayPayloadHandler<ImportMusicPacket> {
+public class ImportMusicPacketHandler {
     private static void processMessage(ImportMusicPacket msg, LocalPlayer player) {
         String filename = msg.name() + ".sheet";
         String filepath = "music_sheets/" + filename;
@@ -54,10 +55,9 @@ public class ImportMusicPacketHandler implements ClientPlayNetworking.PlayPayloa
         }
     }
 
-    @Override
-    public void receive(ImportMusicPacket packet, ClientPlayNetworking.Context context) {
+    public static void handle(ImportMusicPacket packet, IPayloadContext context) {
         if (packet != null) {
-            context.client().execute(() -> processMessage(packet, context.player()));
+            context.enqueueWork(() -> processMessage(packet, Minecraft.getInstance().player));
         }
     }
 }

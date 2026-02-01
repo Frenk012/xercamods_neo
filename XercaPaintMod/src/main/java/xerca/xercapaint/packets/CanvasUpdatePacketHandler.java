@@ -1,9 +1,9 @@
 package xerca.xercapaint.packets;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.entity.EntityEasel;
 import xerca.xercapaint.item.ItemCanvas;
@@ -12,7 +12,7 @@ import xerca.xercapaint.item.Items;
 
 import java.util.Arrays;
 
-public class CanvasUpdatePacketHandler implements ServerPlayNetworking.PlayPayloadHandler<CanvasUpdatePacket> {
+public class CanvasUpdatePacketHandler {
 
     public static void processMessage(CanvasUpdatePacket msg, ServerPlayer pl) {
         ItemStack canvas;
@@ -55,18 +55,18 @@ public class CanvasUpdatePacketHandler implements ServerPlayNetworking.PlayPaylo
         }
 
         if (!canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
-            canvas.set(Items.CANVAS_PIXELS, Arrays.stream(msg.pixels()).boxed().toList());
-            canvas.set(Items.CANVAS_ID, msg.canvasId());
-            canvas.set(Items.CANVAS_VERSION, msg.version());
-            canvas.set(Items.CANVAS_GENERATION, 0);
+            canvas.set(Items.CANVAS_PIXELS.get(), Arrays.stream(msg.pixels()).boxed().toList());
+            canvas.set(Items.CANVAS_ID.get(), msg.canvasId());
+            canvas.set(Items.CANVAS_VERSION.get(), msg.version());
+            canvas.set(Items.CANVAS_GENERATION.get(), 0);
             if (msg.signed()) {
-                canvas.set(Items.CANVAS_AUTHOR, pl.getName().getString());
-                canvas.set(Items.CANVAS_TITLE, msg.title().trim());
-                canvas.set(Items.CANVAS_GENERATION, 1);
+                canvas.set(Items.CANVAS_AUTHOR.get(), pl.getName().getString());
+                canvas.set(Items.CANVAS_TITLE.get(), msg.title().trim());
+                canvas.set(Items.CANVAS_GENERATION.get(), 1);
             }
 
-            if (!palette.isEmpty() && palette.getItem() == Items.ITEM_PALETTE) {
-                palette.set(Items.PALETTE_CUSTOM_COLORS, new ItemPalette.ComponentCustomColor(msg.paletteColors()));
+            if (!palette.isEmpty() && palette.getItem() == Items.ITEM_PALETTE.get()) {
+                palette.set(Items.PALETTE_CUSTOM_COLORS.get(), new ItemPalette.ComponentCustomColor(msg.paletteColors()));
             }
 
             if (entityEasel instanceof EntityEasel easel) {
@@ -78,8 +78,7 @@ public class CanvasUpdatePacketHandler implements ServerPlayNetworking.PlayPaylo
         }
     }
 
-    @Override
-    public void receive(CanvasUpdatePacket packet, ServerPlayNetworking.Context context) {
-        context.server().execute(() -> processMessage(packet, context.player()));
+    public static void handle(CanvasUpdatePacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> processMessage(packet, (ServerPlayer) context.player()));
     }
 }

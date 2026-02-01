@@ -9,8 +9,8 @@ import xerca.xercapaint.Mod;
 
 public record OpenGuiPacket(int easelId, boolean allowed, boolean edit,
                             InteractionHand hand) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<OpenGuiPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("open_gui"));
-    public static final StreamCodec<FriendlyByteBuf, OpenGuiPacket> PACKET_CODEC = StreamCodec.ofMember(OpenGuiPacket::encode, OpenGuiPacket::decode);
+    public static final CustomPacketPayload.Type<OpenGuiPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("open_gui"));
+    public static final StreamCodec<FriendlyByteBuf, OpenGuiPacket> STREAM_CODEC = StreamCodec.ofMember(OpenGuiPacket::encode, OpenGuiPacket::decode);
 
     public FriendlyByteBuf encode(FriendlyByteBuf buf) {
         buf.writeInt(easelId);
@@ -36,6 +36,6 @@ public record OpenGuiPacket(int easelId, boolean allowed, boolean edit,
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

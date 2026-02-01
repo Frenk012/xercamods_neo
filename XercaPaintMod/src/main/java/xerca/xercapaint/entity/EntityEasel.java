@@ -1,6 +1,5 @@
 package xerca.xercapaint.entity;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -31,6 +30,7 @@ import xerca.xercapaint.item.ItemPalette;
 import xerca.xercapaint.item.Items;
 import xerca.xercapaint.packets.CloseGuiPacket;
 import xerca.xercapaint.packets.OpenGuiPacket;
+import xerca.xercapaint.Mod;
 
 import javax.annotation.Nullable;
 
@@ -46,7 +46,7 @@ public class EntityEasel extends Entity {
     }
 
     public EntityEasel(Level world) {
-        super(Entities.EASEL, world);
+        super(Entities.EASEL.get(), world);
     }
 
     public EntityEasel(EntityType<EntityEasel> entityCanvasEntityType, Level world) {
@@ -63,13 +63,13 @@ public class EntityEasel extends Entity {
     }
 
     @Override
-    public boolean hurtServer(@NotNull ServerLevel level, @NotNull DamageSource damageSource, float amount) {
+    public boolean hurt(@NotNull DamageSource damageSource, float amount) {
         if (!this.level().isClientSide && !this.isRemoved()) {
             if (!getItem().isEmpty() && !damageSource.is(DamageTypeTags.IS_EXPLOSION)) {
                 this.dropItem(damageSource.getEntity(), false);
             } else {
                 this.dropItem(damageSource.getEntity());
-                kill((ServerLevel) this.level());
+                kill();
             }
         }
         return false;
@@ -82,9 +82,9 @@ public class EntityEasel extends Entity {
     }
 
     @Override
-    public void kill(@NotNull ServerLevel level) {
+    public void kill() {
         showBreakingParticles();
-        super.kill(level);
+        super.kill();
     }
 
     @Override
@@ -101,7 +101,7 @@ public class EntityEasel extends Entity {
             if (!this.level().isClientSide) {
                 if (dropDeferred == null) {
                     CloseGuiPacket pack = new CloseGuiPacket();
-                    ServerPlayNetworking.send((ServerPlayer) painter, pack);
+                    Mod.sendToClient((ServerPlayer) painter, pack);
                     dropDeferred = () -> doDrop(entity, dropSelf);
                 }
             }
@@ -117,7 +117,7 @@ public class EntityEasel extends Entity {
 
             if (!canvasStack.isEmpty()) {
                 canvasStack = canvasStack.copy();
-                this.spawnAtLocation(serverLevel, canvasStack);
+                this.spawnAtLocation(canvasStack);
             }
 
             if (entity instanceof Player player) {
@@ -127,7 +127,7 @@ public class EntityEasel extends Entity {
             }
 
             if (dropSelf && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
-                this.spawnAtLocation(serverLevel, this.getEaselItemStack());
+                this.spawnAtLocation(this.getEaselItemStack());
             }
         }
     }
@@ -219,10 +219,10 @@ public class EntityEasel extends Entity {
                 }
             } else {
                 boolean unused = this.painter == null;
-                boolean toEdit = handHoldsPalette && !(getItem().getOrDefault(Items.CANVAS_GENERATION, 0) > 0);
+                boolean toEdit = handHoldsPalette && !(getItem().getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0);
                 boolean allowed = unused || !toEdit;
                 OpenGuiPacket pack = new OpenGuiPacket(this.getId(), allowed, toEdit, hand);
-                ServerPlayNetworking.send((ServerPlayer) player, pack);
+                Mod.sendToClient((ServerPlayer) player, pack);
                 if (toEdit && allowed) {
                     this.painter = player;
                 }
@@ -233,7 +233,7 @@ public class EntityEasel extends Entity {
     }
 
     protected ItemStack getEaselItemStack() {
-        return new ItemStack(Items.ITEM_EASEL);
+        return new ItemStack(Items.ITEM_EASEL.get());
     }
 
     @Override

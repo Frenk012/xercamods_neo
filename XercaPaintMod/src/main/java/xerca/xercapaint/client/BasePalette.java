@@ -118,7 +118,7 @@ public abstract class BasePalette extends Screen {
         super(titleIn);
         this.basicColorFlags = new boolean[16];
 
-        ItemPalette.ComponentCustomColor componentCustomColor = paletteStack.get(Items.PALETTE_CUSTOM_COLORS);
+        ItemPalette.ComponentCustomColor componentCustomColor = paletteStack.get(Items.PALETTE_CUSTOM_COLORS.get());
         if (componentCustomColor != null) {
             this.customColors = componentCustomColor.colors;
         } else {
@@ -128,11 +128,11 @@ public abstract class BasePalette extends Screen {
             }
         }
 
-        byte[] basics = paletteStack.get(Items.PALETTE_BASIC_COLORS);
+        Items.BasicColors basics = paletteStack.get(Items.PALETTE_BASIC_COLORS.get());
         if (basics != null) {
             paletteComplete = true;
-            for (int i = 0; i < basics.length; i++) {
-                basicColorFlags[i] = basics[i] > 0;
+            for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+                basicColorFlags[i] = basics.get(i) > 0;
                 paletteComplete &= basicColorFlags[i];
             }
         }
@@ -156,7 +156,7 @@ public abstract class BasePalette extends Screen {
             if (basicColorFlags[i]) {
                 guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, basicColors[i].rgbVal());
 
-                guiGraphics.blit(RenderType::guiTextured, paletteTextures, x - 8, y - 8, dyeSpriteX, i * dyeSpriteSize, dyeSpriteSize, dyeSpriteSize, 256, 256);
+                guiGraphics.blit(paletteTextures, x - 8, y - 8, dyeSpriteX, i * dyeSpriteSize, dyeSpriteSize, dyeSpriteSize, 256, 256);
             } else {
                 guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, EMPTINESS_COLOR.rgbVal());
             }
@@ -169,11 +169,11 @@ public abstract class BasePalette extends Screen {
             guiGraphics.fill(x - 6, y - 7, x + 7, y + 6, customColors[i].getColor().rgbVal());
         }
 
-        guiGraphics.blit(RenderType::guiTextured, paletteTextures, (int) paletteX, (int) paletteY, 0, 0, paletteWidth, paletteHeight, 256, 256);
+        guiGraphics.blit(paletteTextures, (int) paletteX, (int) paletteY, 0, 0, paletteWidth, paletteHeight, 256, 256);
 
         // Draw color picker
         if (paletteComplete) {
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, (int) paletteX + colorPickerPosX, (int) paletteY + colorPickerPosY, colorPickerSpriteX, colorPickerSpriteY, colorPickerSize, colorPickerSize, 256, 256);
+            guiGraphics.blit(paletteTextures, (int) paletteX + colorPickerPosX, (int) paletteY + colorPickerPosY, colorPickerSpriteX, colorPickerSpriteY, colorPickerSize, colorPickerSize, 256, 256);
         }
     }
 
@@ -208,7 +208,7 @@ public abstract class BasePalette extends Screen {
                     if (mouseButton == 0) {
                         carriedColor = currentColor = basicColors[i];
                         setCarryingColor();
-                        playSound(SoundEvents.MIX, 0.6f);
+                        playSound(SoundEvents.MIX.get(), 0.6f);
                     }
                     didSomething = true;
                     break;
@@ -223,7 +223,7 @@ public abstract class BasePalette extends Screen {
                                 carriedColor = currentColor = customColors[i].getColor();
                                 carriedCustomColorId = i;
                                 setCarryingColor();
-                                playSound(SoundEvents.MIX, 0.3f);
+                                playSound(SoundEvents.MIX.get(), 0.3f);
                             }
                         }
                         didSomething = true;
@@ -236,7 +236,7 @@ public abstract class BasePalette extends Screen {
                 if (sqrDist(clickVec, waterCenter) <= sqrCustomRadius) {
                     if (mouseButton == 0) {
                         setCarryingWater();
-                        playSound(SoundEvents.WATER);
+                        playSound(SoundEvents.WATER.get());
                         didSomething = true;
                     }
                 }
@@ -246,7 +246,7 @@ public abstract class BasePalette extends Screen {
                 if (inColorPicker(x, y)) {
                     if (mouseButton == 0) {
                         setPickingColor();
-                        playSound(SoundEvents.COLOR_PICKER);
+                        playSound(SoundEvents.COLOR_PICKER.get());
                         didSomething = true;
                     }
                 }
@@ -305,12 +305,12 @@ public abstract class BasePalette extends Screen {
                         PaletteUtil.CustomColor customColor = customColors[i];
                         if (isCarryingWater) {
                             customColor.reset();
-                            playSound(SoundEvents.WATER_DROP);
+                            playSound(SoundEvents.WATER_DROP.get());
                         } else {
                             if (carriedCustomColorId != i) {
                                 customColor.mix(carriedColor);
                                 currentColor = customColor.getColor();
-                                playSound(SoundEvents.MIX);
+                                playSound(SoundEvents.MIX.get());
                             }
                         }
                         paletteDirty = true;

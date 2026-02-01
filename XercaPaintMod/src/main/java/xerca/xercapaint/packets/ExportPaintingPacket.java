@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.Mod;
 
 public record ExportPaintingPacket(String canvasId) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<ExportPaintingPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("export_painting"));
-    public static final StreamCodec<FriendlyByteBuf, ExportPaintingPacket> PACKET_CODEC = StreamCodec.ofMember(ExportPaintingPacket::encode, ExportPaintingPacket::decode);
+    public static final CustomPacketPayload.Type<ExportPaintingPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("export_painting"));
+    public static final StreamCodec<FriendlyByteBuf, ExportPaintingPacket> STREAM_CODEC = StreamCodec.ofMember(ExportPaintingPacket::encode, ExportPaintingPacket::decode);
 
     public FriendlyByteBuf encode(FriendlyByteBuf buf) {
         buf.writeUtf(canvasId);
@@ -21,6 +21,6 @@ public record ExportPaintingPacket(String canvasId) implements CustomPacketPaylo
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

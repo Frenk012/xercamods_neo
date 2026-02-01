@@ -6,7 +6,7 @@ import com.mojang.serialization.codecs.PrimitiveCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -24,16 +24,16 @@ import java.util.stream.IntStream;
 
 public class ItemPalette extends Item {
     ItemPalette(String name) {
-        super(new Properties().stacksTo(1).setId(Mod.itemKey(name)));
+        super(new Properties().stacksTo(1));
     }
 
     @Nonnull
     @Override
-    public InteractionResult use(Level worldIn, @NotNull Player playerIn, @Nonnull InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level worldIn, @NotNull Player playerIn, @Nonnull InteractionHand hand) {
         if (worldIn.isClientSide) {
             ModClient.showCanvasGui(playerIn);
         }
-        return InteractionResult.SUCCESS.withoutItem();
+        return InteractionResultHolder.success(playerIn.getItemInHand(hand));
     }
 
     public static boolean isFull(ItemStack stack) {
@@ -41,34 +41,32 @@ public class ItemPalette extends Item {
     }
 
     public static int basicColorCount(ItemStack stack) {
-        if (stack.getItem() != Items.ITEM_PALETTE) {
+        if (stack.getItem() != Items.ITEM_PALETTE.get()) {
             return 0;
         }
-        byte[] basicColors = stack.get(Items.PALETTE_BASIC_COLORS);
+        Items.BasicColors basicColors = stack.get(Items.PALETTE_BASIC_COLORS.get());
         if (basicColors != null) {
-            if (basicColors.length == 16) {
-                int basicCount = 0;
-                for (byte basicColor : basicColors) {
-                    basicCount += basicColor;
-                }
-                return basicCount;
+            int basicCount = 0;
+            for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+                basicCount += basicColors.get(i);
             }
+            return basicCount;
         }
         return 0;
     }
 
     @Override
-    @net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     public void appendHoverText(ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flagIn) {
-        byte[] basicColors = stack.get(Items.PALETTE_BASIC_COLORS);
-        ComponentCustomColor customColorComp = stack.get(Items.PALETTE_CUSTOM_COLORS);
+        Items.BasicColors basicColors = stack.get(Items.PALETTE_BASIC_COLORS.get());
+        ComponentCustomColor customColorComp = stack.get(Items.PALETTE_CUSTOM_COLORS.get());
         if (basicColors == null && customColorComp == null) {
             tooltip.add(Component.translatable("palette.empty").withStyle(ChatFormatting.GRAY));
         } else {
-            if (basicColors != null && basicColors.length == 16) {
+            if (basicColors != null) {
                 int basicCount = 0;
-                for (byte basicColor : basicColors) {
-                    basicCount += basicColor;
+                for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+                    basicCount += basicColors.get(i);
                 }
                 tooltip.add(Component.translatable("palette.basic_count", String.valueOf(basicCount)).withStyle(ChatFormatting.GRAY));
             }
@@ -137,6 +135,19 @@ public class ItemPalette extends Item {
                 return "CustomColorCodec";
             }
         };
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ComponentCustomColor that = (ComponentCustomColor) o;
+            return Arrays.equals(colors, that.colors);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(colors);
+        }
     }
 
 }

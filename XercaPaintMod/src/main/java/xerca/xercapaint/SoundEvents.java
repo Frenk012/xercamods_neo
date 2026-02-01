@@ -1,24 +1,24 @@
 package xerca.xercapaint;
 
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.sounds.SoundEvent;
-
-import static net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class SoundEvents {
-    public final static SoundEvent STROKE_LOOP = SoundEvent.createVariableRangeEvent(Mod.id("stroke_loop"));
-    public final static SoundEvent MIX = SoundEvent.createVariableRangeEvent(Mod.id("mix"));
-    public final static SoundEvent COLOR_PICKER = SoundEvent.createVariableRangeEvent(Mod.id("color_picker"));
-    public final static SoundEvent COLOR_PICKER_SUCK = SoundEvent.createVariableRangeEvent(Mod.id("color_picker_suck"));
-    public final static SoundEvent WATER = SoundEvent.createVariableRangeEvent(Mod.id("water"));
-    public final static SoundEvent WATER_DROP = SoundEvent.createVariableRangeEvent(Mod.id("water_drop"));
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
+            DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, Mod.MODID);
 
-    public static void registerSoundEvents() {
-        Registry.register(SOUND_EVENT, STROKE_LOOP.location(), STROKE_LOOP);
-        Registry.register(SOUND_EVENT, MIX.location(), MIX);
-        Registry.register(SOUND_EVENT, COLOR_PICKER.location(), COLOR_PICKER);
-        Registry.register(SOUND_EVENT, COLOR_PICKER_SUCK.location(), COLOR_PICKER_SUCK);
-        Registry.register(SOUND_EVENT, WATER.location(), WATER);
-        Registry.register(SOUND_EVENT, WATER_DROP.location(), WATER_DROP);
-    }
+    public static final DeferredHolder<SoundEvent, SoundEvent> STROKE_LOOP =
+            SOUND_EVENTS.register("stroke_loop", () -> SoundEvent.createVariableRangeEvent(Mod.id("stroke_loop")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> MIX =
+            SOUND_EVENTS.register("mix", () -> SoundEvent.createVariableRangeEvent(Mod.id("mix")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> COLOR_PICKER =
+            SOUND_EVENTS.register("color_picker", () -> SoundEvent.createVariableRangeEvent(Mod.id("color_picker")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> COLOR_PICKER_SUCK =
+            SOUND_EVENTS.register("color_picker_suck", () -> SoundEvent.createVariableRangeEvent(Mod.id("color_picker_suck")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> WATER =
+            SOUND_EVENTS.register("water", () -> SoundEvent.createVariableRangeEvent(Mod.id("water")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> WATER_DROP =
+            SOUND_EVENTS.register("water_drop", () -> SoundEvent.createVariableRangeEvent(Mod.id("water_drop")));
 }

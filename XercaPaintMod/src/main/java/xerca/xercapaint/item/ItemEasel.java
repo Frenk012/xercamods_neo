@@ -7,8 +7,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 public class ItemEasel extends Item {
 
     public ItemEasel(String name) {
-        super(new Item.Properties().stacksTo(1).setId(Mod.itemKey(name)));
+        super(new Item.Properties().stacksTo(1));
     }
 
     @Override
@@ -41,11 +41,11 @@ public class ItemEasel extends Item {
             BlockPos blockpos = blockplacecontext.getClickedPos();
             ItemStack itemstack = ctx.getItemInHand();
             Vec3 vec3 = Vec3.atBottomCenterOf(blockpos);
-            AABB aabb = Entities.EASEL.getDimensions().makeBoundingBox(vec3.x(), vec3.y(), vec3.z());
+            AABB aabb = Entities.EASEL.get().getDimensions().makeBoundingBox(vec3.x(), vec3.y(), vec3.z());
             if (level.noCollision(null, aabb) && level.getEntities(null, aabb).isEmpty()) {
                 if (level instanceof ServerLevel serverlevel) {
                     Consumer<EntityEasel> consumer = EntityType.createDefaultStackConfig(serverlevel, itemstack, ctx.getPlayer());
-                    EntityEasel easel = Entities.EASEL.create(serverlevel, consumer, blockpos, EntitySpawnReason.SPAWN_ITEM_USE, true, true);
+                    EntityEasel easel = Entities.EASEL.get().create(serverlevel, consumer, blockpos, MobSpawnType.SPAWN_EGG, true, true);
                     if (easel == null) {
                         return InteractionResult.FAIL;
                     }

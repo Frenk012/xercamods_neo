@@ -115,11 +115,11 @@ public class ItemMusicSheet extends Item {
     }
 
     public static byte getBPS(@Nonnull ItemStack stack) {
-        return stack.getOrDefault(Items.SHEET_BPS, (byte) 0);
+        return stack.getOrDefault(Items.SHEET_BPS.get(), (byte) 0);
     }
 
     public static int getPrevInstrument(@Nonnull ItemStack stack) {
-        Byte prevIns = stack.get(Items.SHEET_PREV_INSTRUMENT);
+        Byte prevIns = stack.get(Items.SHEET_PREV_INSTRUMENT.get());
         if (prevIns != null) {
             return prevIns;
         }
@@ -127,11 +127,11 @@ public class ItemMusicSheet extends Item {
     }
 
     public static float getVolume(@Nonnull ItemStack stack) {
-        return stack.getOrDefault(Items.SHEET_VOLUME, 1.f);
+        return stack.getOrDefault(Items.SHEET_VOLUME.get(), 1.f);
     }
 
     public static boolean isEmptySheet(@Nonnull ItemStack stack) {
-        return stack.get(Items.SHEET_GENERATION) == null && stack.get(Items.SHEET_ID) == null && stack.get(Items.SHEET_VERSION) == null;
+        return stack.get(Items.SHEET_GENERATION.get()) == null && stack.get(Items.SHEET_ID.get()) == null && stack.get(Items.SHEET_VERSION.get()) == null;
     }
 
     @Nonnull
@@ -147,7 +147,7 @@ public class ItemMusicSheet extends Item {
     @Nonnull
     @Override
     public Component getName(@Nonnull ItemStack stack) {
-        String title = stack.get(Items.SHEET_TITLE);
+        String title = stack.get(Items.SHEET_TITLE.get());
         if (title != null) {
             return Component.literal(title);
         }
@@ -159,20 +159,20 @@ public class ItemMusicSheet extends Item {
      */
     @Override
     public void appendHoverText(@NotNull ItemStack stack, Item.@NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag tooltipFlag) {
-        String s = stack.get(Items.SHEET_AUTHOR);
+        String s = stack.get(Items.SHEET_AUTHOR.get());
 
         if (s != null) {
             tooltip.add(Component.translatable("note.byAuthor", s));
         }
 
-        int generation = stack.getOrDefault(Items.SHEET_GENERATION, 0);
+        int generation = stack.getOrDefault(Items.SHEET_GENERATION.get(), 0);
         // generation = 0 means empty, 1 means original, more means copy
         if (generation > 0) {
             tooltip.add(Component.translatable("note.generation." + (generation - 1))
                     .withStyle(generation == 1 ? ChatFormatting.GOLD : ChatFormatting.GRAY));
         }
 
-        int length = stack.getOrDefault(Items.SHEET_LENGTH, 0);
+        int length = stack.getOrDefault(Items.SHEET_LENGTH.get(), 0);
         if (length > 0) {
             tooltip.add(Component.translatable("note.length", length).withStyle(ChatFormatting.GRAY));
         }
@@ -181,8 +181,8 @@ public class ItemMusicSheet extends Item {
             tooltip.add(Component.translatable("note.tempo", bps * 60).withStyle(ChatFormatting.GRAY));
         }
         int prevIns = getPrevInstrument(stack);
-        if (prevIns >= 0 && prevIns < Items.INSTRUMENTS.size()) {
-            Component name = ((Item) Items.INSTRUMENTS.get(prevIns)).getName(new ItemStack((Item) Items.INSTRUMENTS.get(prevIns)));
+        if (prevIns >= 0 && prevIns < Items.getInstruments().size()) {
+            Component name = ((Item) Items.getInstruments().get(prevIns)).getName(new ItemStack((Item) Items.getInstruments().get(prevIns)));
             tooltip.add(Component.translatable("note.preview_instrument", name).withStyle(ChatFormatting.GRAY));
         }
     }
@@ -193,9 +193,9 @@ public class ItemMusicSheet extends Item {
         Level world = context.getLevel();
         BlockPos blockpos = context.getClickedPos();
         BlockState blockState = world.getBlockState(blockpos);
-        if (blockState.getBlock() == Blocks.MUSIC_BOX && !blockState.getValue(BlockMusicBox.HAS_MUSIC)) {
+        if (blockState.getBlock() == Blocks.MUSIC_BOX.get() && !blockState.getValue(BlockMusicBox.HAS_MUSIC)) {
             ItemStack itemstack = context.getItemInHand();
-            if (!world.isClientSide && itemstack.get(Items.SHEET_ID) != null) {
+            if (!world.isClientSide && itemstack.get(Items.SHEET_ID.get()) != null) {
                 BlockMusicBox.insertMusic(world, blockpos, blockState, itemstack.copy());
                 Player player = context.getPlayer();
                 if (player != null && !player.getAbilities().instabuild) {
@@ -211,6 +211,6 @@ public class ItemMusicSheet extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return stack.getOrDefault(Items.SHEET_GENERATION, 0) > 0;
+        return stack.getOrDefault(Items.SHEET_GENERATION.get(), 0) > 0;
     }
 }

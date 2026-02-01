@@ -3,7 +3,6 @@ package xerca.xercapaint.client;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -26,12 +25,13 @@ import xerca.xercapaint.packets.CanvasMiniUpdatePacket;
 import xerca.xercapaint.packets.CanvasUpdatePacket;
 import xerca.xercapaint.packets.EaselLeftPacket;
 import xerca.xercapaint.packets.PaletteUpdatePacket;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 
-@net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+@net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
 public class GuiCanvasEdit extends BasePalette {
     private double canvasX;
     private double canvasY;
@@ -105,14 +105,14 @@ public class GuiCanvasEdit extends BasePalette {
         this.easel = easel;
 
         this.editingPlayer = player;
-        List<Integer> stackPixels = canvasStack.get(Items.CANVAS_PIXELS);
-        String canvasId = canvasStack.get(Items.CANVAS_ID);
+        List<Integer> stackPixels = canvasStack.get(Items.CANVAS_PIXELS.get());
+        String canvasId = canvasStack.get(Items.CANVAS_ID.get());
         if (stackPixels != null && canvasId != null) {
             this.pixels = stackPixels.stream().mapToInt(i -> i).toArray();
             this.canvasId = canvasId;
-            this.version = canvasStack.getOrDefault(Items.CANVAS_VERSION, 1);
+            this.version = canvasStack.getOrDefault(Items.CANVAS_VERSION.get(), 1);
 
-            canvasTitle = canvasStack.getOrDefault(Items.CANVAS_TITLE, "");
+            canvasTitle = canvasStack.getOrDefault(Items.CANVAS_TITLE.get(), "");
             isSigned = !canvasTitle.isEmpty();
         } else {
             this.pixels = new int[canvasPixelArea];
@@ -327,12 +327,12 @@ public class GuiCanvasEdit extends BasePalette {
                 int y = brushMeterY + i * brushSpriteSize;
                 guiGraphics.fill(brushMeterX, y, brushMeterX + 3, y + 3, currentColor.rgbVal());
             }
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, brushMeterX, brushMeterY + (3 - brushSize) * brushSpriteSize, 15, 246, 10, 10, 256, 256);
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, brushMeterX, brushMeterY, brushSpriteX, brushSpriteY - brushSpriteSize * 3, brushSpriteSize, brushSpriteSize * 4, 256, 256);
+            guiGraphics.blit(paletteTextures, brushMeterX, brushMeterY + (3 - brushSize) * brushSpriteSize, 15, 246, 10, 10, 256, 256);
+            guiGraphics.blit(paletteTextures, brushMeterX, brushMeterY, brushSpriteX, brushSpriteY - brushSpriteSize * 3, brushSpriteSize, brushSpriteSize * 4, 256, 256);
 
             // Draw opacity meter
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, brushOpacityMeterX, brushOpacityMeterY, brushOpacitySpriteX, brushOpacitySpriteY, brushOpacitySpriteSize, brushOpacitySpriteSize * 4 + 3, 256, 256);
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, brushOpacityMeterX - 1, brushOpacityMeterY - 1 + brushOpacitySetting * (brushOpacitySpriteSize + 1), 212, 240, 16, 16, 256, 256);
+            guiGraphics.blit(paletteTextures, brushOpacityMeterX, brushOpacityMeterY, brushOpacitySpriteX, brushOpacitySpriteY, brushOpacitySpriteSize, brushOpacitySpriteSize * 4 + 3, 256, 256);
+            guiGraphics.blit(paletteTextures, brushOpacityMeterX - 1, brushOpacityMeterY - 1 + brushOpacitySetting * (brushOpacitySpriteSize + 1), 212, 240, 16, 16, 256, 256);
 
             // Draw brush and outline
             renderCursor(guiGraphics, mouseX, mouseY);
@@ -368,20 +368,32 @@ public class GuiCanvasEdit extends BasePalette {
 
     private void renderCursor(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (isCarryingColor) {
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256, carriedColor.rgbVal());
+            // Apply color tint using RenderSystem (NeoForge 1.21.1 doesn't support tinted blit with int color)
+            float r = ((carriedColor.rgbVal() >> 16) & 0xFF) / 255.0f;
+            float g = ((carriedColor.rgbVal() >> 8) & 0xFF) / 255.0f;
+            float b = (carriedColor.rgbVal() & 0xFF) / 255.0f;
+            RenderSystem.setShaderColor(r, g, b, 1.0f);
+            guiGraphics.blit(paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         } else if (isCarryingWater) {
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256, waterColor.rgbVal());
+            // Apply water color tint
+            float r = ((waterColor.rgbVal() >> 16) & 0xFF) / 255.0f;
+            float g = ((waterColor.rgbVal() >> 8) & 0xFF) / 255.0f;
+            float b = (waterColor.rgbVal() & 0xFF) / 255.0f;
+            RenderSystem.setShaderColor(r, g, b, 1.0f);
+            guiGraphics.blit(paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         } else if (isPickingColor) {
             drawOutline(guiGraphics, mouseX, mouseY, 0);
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX, mouseY - colorPickerSize, colorPickerSpriteX, colorPickerSpriteY, colorPickerSize, colorPickerSize, 256, 256, PaletteUtil.Color.WHITE.rgbVal());
+            guiGraphics.blit(paletteTextures, mouseX, mouseY - colorPickerSize, colorPickerSpriteX, colorPickerSpriteY, colorPickerSize, colorPickerSize, 256, 256);
         } else {
             drawOutline(guiGraphics, mouseX, mouseY, brushSize);
 
             guiGraphics.fill(mouseX, mouseY, mouseX + 3, mouseY + 3, currentColor.rgbVal());
 
             int trueBrushY = brushSpriteY - brushSpriteSize * brushSize;
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX, mouseY, brushSpriteX, trueBrushY, brushSpriteSize, brushSpriteSize, 256, 256);
+            guiGraphics.blit(paletteTextures, mouseX, mouseY, brushSpriteX, trueBrushY, brushSpriteSize, brushSpriteSize, 256, 256);
         }
     }
 
@@ -420,7 +432,8 @@ public class GuiCanvasEdit extends BasePalette {
                 textureVec = outlinePoss2[brushSize];
             }
 
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, x, y, (int) textureVec.x, (int) textureVec.y, outlineSize, outlineSize, 256, 256, 0xFF4D4D4D);
+            // Draw outline without color tint (NeoForge 1.21.1 doesn't support tinted blit with int color)
+            guiGraphics.blit(paletteTextures, x, y, (int) textureVec.x, (int) textureVec.y, outlineSize, outlineSize, 256, 256);
         }
     }
 
@@ -566,7 +579,7 @@ public class GuiCanvasEdit extends BasePalette {
                     int color = getPixelAt(x, y);
                     carriedColor = new PaletteUtil.Color(color);
                     setCarryingColor();
-                    playSound(SoundEvents.COLOR_PICKER_SUCK);
+                    playSound(SoundEvents.COLOR_PICKER_SUCK.get());
                 }
             } else {
                 clickedCanvas(mouseX, mouseY, mouseButton);
@@ -705,14 +718,14 @@ public class GuiCanvasEdit extends BasePalette {
             if (canvasDirty) {
                 version++;
                 int easelId = easel == null ? -1 : easel.getId();
-                ClientPlayNetworking.send(new CanvasUpdatePacket(pixels, isSigned, canvasTitle, canvasId, version, easelId, customColors, canvasType));
+                PacketDistributor.sendToServer(new CanvasUpdatePacket(pixels, isSigned, canvasTitle, canvasId, version, easelId, customColors, canvasType));
             } else {
                 if (easel != null) {
-                    ClientPlayNetworking.send(new EaselLeftPacket(easel.getId()));
+                    PacketDistributor.sendToServer(new EaselLeftPacket(easel.getId()));
                 }
                 if (paletteDirty) {
                     PaletteUpdatePacket pack = new PaletteUpdatePacket(customColors);
-                    ClientPlayNetworking.send(pack);
+                    PacketDistributor.sendToServer(pack);
                 }
             }
         } else {
@@ -721,7 +734,7 @@ public class GuiCanvasEdit extends BasePalette {
                     skippedUpdate = true;
                 } else {
                     version++;
-                    ClientPlayNetworking.send(new CanvasMiniUpdatePacket(pixels, canvasId, version, easel.getId(), canvasType));
+                    PacketDistributor.sendToServer(new CanvasMiniUpdatePacket(pixels, canvasId, version, easel.getId(), canvasType));
                     canvasDirty = false;
                     timeSinceLastUpdate = 0;
                 }
@@ -761,7 +774,7 @@ public class GuiCanvasEdit extends BasePalette {
                 yTexStartNew += this.yDiffText;
             }
             int xTexStartNew = this.xTexStart + (showHelp ? 0 : this.width);
-            guiGraphics.blit(RenderType::guiTextured, resourceLocation, this.getX(), this.getY(), (float) xTexStartNew, (float) yTexStartNew, this.width, this.height, this.texWidth, this.texHeight);
+            guiGraphics.blit(resourceLocation, this.getX(), this.getY(), (float) xTexStartNew, (float) yTexStartNew, this.width, this.height, this.texWidth, this.texHeight);
             postRender();
         }
     }

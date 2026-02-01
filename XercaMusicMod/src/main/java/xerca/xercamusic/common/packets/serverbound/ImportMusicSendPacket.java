@@ -18,8 +18,8 @@ import static xerca.xercamusic.common.item.ItemMusicSheet.KEY_NOTES;
 
 public record ImportMusicSendPacket(UUID uuid, CompoundTag tag,
                                     ArrayList<NoteEvent> notes) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<ImportMusicSendPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("import_music_send"));
-    public static final StreamCodec<FriendlyByteBuf, ImportMusicSendPacket> PACKET_CODEC = StreamCodec.ofMember(ImportMusicSendPacket::encode, ImportMusicSendPacket::decode);
+    public static final CustomPacketPayload.Type<ImportMusicSendPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("import_music_send"));
+    public static final StreamCodec<FriendlyByteBuf, ImportMusicSendPacket> STREAM_CODEC = StreamCodec.ofMember(ImportMusicSendPacket::encode, ImportMusicSendPacket::decode);
 
     public static ImportMusicSendPacket createEmpty() {
         return new ImportMusicSendPacket(null, null, null);
@@ -92,7 +92,7 @@ public record ImportMusicSendPacket(UUID uuid, CompoundTag tag,
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 
     public static class NotesTooLargeException extends Exception {

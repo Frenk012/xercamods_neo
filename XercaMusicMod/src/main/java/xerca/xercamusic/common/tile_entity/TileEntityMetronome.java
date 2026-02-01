@@ -29,7 +29,7 @@ public class TileEntityMetronome extends BlockEntity {
     private int countDown = 0;
 
     public TileEntityMetronome(BlockPos blockPos, BlockState blockState) {
-        super(BlockEntities.METRONOME, blockPos, blockState);
+        super(BlockEntities.METRONOME.get(), blockPos, blockState);
     }
 
     public static void tick(Level level, TileEntityMetronome metronome) {
@@ -47,7 +47,7 @@ public class TileEntityMetronome extends BlockEntity {
                     if (level.isClientSide) {// note: doesn't work if this function is only called in server
                         try {
                             onlyCallOnClient(() -> () ->
-                                    ClientStuff.playNote(SoundEvents.TICK, metronome.worldPosition.getX(), metronome.worldPosition.getY(), metronome.worldPosition.getZ(), SoundSource.BLOCKS, 1.0f, 0.9f + level.random.nextFloat() * 0.1f, (byte) -1));
+                                    ClientStuff.playNote(SoundEvents.TICK.get(), metronome.worldPosition.getX(), metronome.worldPosition.getY(), metronome.worldPosition.getZ(), SoundSource.BLOCKS, 1.0f, 0.9f + level.random.nextFloat() * 0.1f, (byte) -1));
                         } catch (Exception e) {
                             Mod.LOGGER.error("Error playing metronome note", e);
                         }
@@ -58,7 +58,7 @@ public class TileEntityMetronome extends BlockEntity {
                         if (metronome.countDown == 3) {
                             List<Player> players = level.getEntitiesOfClass(Player.class, new AABB(metronome.worldPosition.subtract(HALF_RANGE).getCenter(), metronome.worldPosition.offset(HALF_RANGE).getCenter()),
                                     player -> player.getMainHandItem().getItem() instanceof IItemInstrument &&
-                                            player.getOffhandItem().getItem() instanceof ItemMusicSheet && (int) player.getOffhandItem().getOrDefault(Items.SHEET_BPS, (byte) 0) == bps);
+                                            player.getOffhandItem().getItem() instanceof ItemMusicSheet && (int) player.getOffhandItem().getOrDefault(Items.SHEET_BPS.get(), (byte) 0) == bps);
                             Mod.LOGGER.info("Metronome found {} players", players::size);
                             for (Player player : players) {
                                 IItemInstrument.playMusic(level, player, false);

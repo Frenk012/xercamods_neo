@@ -16,8 +16,8 @@ import static xerca.xercamusic.common.Mod.MAX_NOTES_IN_PACKET;
 public record MusicUpdatePacket(FieldFlag availability, ArrayList<NoteEvent> notes, short lengthBeats, byte bps,
                                 float volume, boolean signed, String title, byte prevInstrument, boolean prevInsLocked,
                                 UUID id, int version, byte highlightInterval) implements CustomPacketPayload {
-    public static final Type<MusicUpdatePacket> PACKET_ID = new Type<>(Mod.id("music_update"));
-    public static final StreamCodec<FriendlyByteBuf, MusicUpdatePacket> PACKET_CODEC = StreamCodec.ofMember(MusicUpdatePacket::encode, MusicUpdatePacket::decode);
+    public static final Type<MusicUpdatePacket> TYPE = new Type<>(Mod.id("music_update"));
+    public static final StreamCodec<FriendlyByteBuf, MusicUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(MusicUpdatePacket::encode, MusicUpdatePacket::decode);
 
     public static MusicUpdatePacket createEmpty() {
         return new MusicUpdatePacket(new FieldFlag(), null, (short) 0, (byte) 0, 0.0f, false, null, (byte) 0, false, null, 0, (byte) 0);
@@ -113,7 +113,7 @@ public record MusicUpdatePacket(FieldFlag availability, ArrayList<NoteEvent> not
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 
     public static class FieldFlag {

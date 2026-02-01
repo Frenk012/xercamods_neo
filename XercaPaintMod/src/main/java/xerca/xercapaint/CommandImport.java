@@ -3,7 +3,7 @@ package xerca.xercapaint;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -33,7 +33,7 @@ public class CommandImport {
         ImportPaintingPacket pack = new ImportPaintingPacket(name);
         try {
             ServerPlayer player = stack.getPlayerOrException();
-            ServerPlayNetworking.send(player, pack);
+            PacketDistributor.sendToPlayer(player, pack);
         } catch (CommandSyntaxException e) {
             Mod.LOGGER.debug("Command executor is not a player");
             e.printStackTrace();
@@ -87,10 +87,10 @@ public class CommandImport {
                 return;
             }
             switch (type) {
-                case SMALL -> itemStack = new ItemStack(Items.ITEM_CANVAS);
-                case LONG -> itemStack = new ItemStack(Items.ITEM_CANVAS_LONG);
-                case TALL -> itemStack = new ItemStack(Items.ITEM_CANVAS_TALL);
-                case LARGE -> itemStack = new ItemStack(Items.ITEM_CANVAS_LARGE);
+                case SMALL -> itemStack = new ItemStack(Items.ITEM_CANVAS.get());
+                case LONG -> itemStack = new ItemStack(Items.ITEM_CANVAS_LONG.get());
+                case TALL -> itemStack = new ItemStack(Items.ITEM_CANVAS_TALL.get());
+                case LARGE -> itemStack = new ItemStack(Items.ITEM_CANVAS_LARGE.get());
                 default -> {
                     Mod.LOGGER.error("Unknown canvas type");
                     return;
@@ -101,20 +101,20 @@ public class CommandImport {
             ItemStack mainhand = player.getMainHandItem();
             ItemStack offhand = player.getOffhandItem();
 
-            if (!(mainhand.getItem() instanceof ItemCanvas) || (mainhand.get(Items.CANVAS_PIXELS) != null || mainhand.get(Items.CANVAS_ID) != null)) {
+            if (!(mainhand.getItem() instanceof ItemCanvas) || (mainhand.get(Items.CANVAS_PIXELS.get()) != null || mainhand.get(Items.CANVAS_ID.get()) != null)) {
                 player.sendSystemMessage(Component.translatable("xercapaint.import.fail.1").withStyle(ChatFormatting.RED));
                 return;
             }
             if (((ItemCanvas) mainhand.getItem()).getCanvasType() != CanvasType.fromByte(canvasType)) {
-                Component typeName = Items.ITEM_CANVAS.getName(ItemStack.EMPTY);
+                Component typeName = Items.ITEM_CANVAS.get().getName(ItemStack.EMPTY);
                 CanvasType type = CanvasType.fromByte(canvasType);
                 if (type == null) {
                     return;
                 }
                 switch (type) {
-                    case LONG -> typeName = Items.ITEM_CANVAS_LONG.getName(ItemStack.EMPTY);
-                    case TALL -> typeName = Items.ITEM_CANVAS_TALL.getName(ItemStack.EMPTY);
-                    case LARGE -> typeName = Items.ITEM_CANVAS_LARGE.getName(ItemStack.EMPTY);
+                    case LONG -> typeName = Items.ITEM_CANVAS_LONG.get().getName(ItemStack.EMPTY);
+                    case TALL -> typeName = Items.ITEM_CANVAS_TALL.get().getName(ItemStack.EMPTY);
+                    case LARGE -> typeName = Items.ITEM_CANVAS_LARGE.get().getName(ItemStack.EMPTY);
                 }
                 player.sendSystemMessage(Component.translatable("xercapaint.import.fail.2", typeName).withStyle(ChatFormatting.RED));
                 return;
@@ -126,13 +126,13 @@ public class CommandImport {
             itemStack = mainhand;
         }
 
-        itemStack.set(Items.CANVAS_VERSION, tag.getInt("v"));
-        itemStack.set(Items.CANVAS_ID, canvasId);
-        itemStack.set(Items.CANVAS_PIXELS, Arrays.stream(tag.getIntArray("pixels")).boxed().toList());
-        itemStack.set(Items.CANVAS_GENERATION, tag.getInt("generation"));
+        itemStack.set(Items.CANVAS_VERSION.get(), tag.getInt("v"));
+        itemStack.set(Items.CANVAS_ID.get(), canvasId);
+        itemStack.set(Items.CANVAS_PIXELS.get(), Arrays.stream(tag.getIntArray("pixels")).boxed().toList());
+        itemStack.set(Items.CANVAS_GENERATION.get(), tag.getInt("generation"));
         if (tag.contains("title", 8) && tag.contains("author", 8)) {
-            itemStack.set(Items.CANVAS_TITLE, tag.getString("title"));
-            itemStack.set(Items.CANVAS_AUTHOR, tag.getString("author"));
+            itemStack.set(Items.CANVAS_TITLE.get(), tag.getString("title"));
+            itemStack.set(Items.CANVAS_AUTHOR.get(), tag.getString("author"));
         }
         if (doAddItem) {
             player.addItem(itemStack);

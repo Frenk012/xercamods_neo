@@ -30,7 +30,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack stack = inv.getItem(j);
             if (!stack.isEmpty()) {
-                if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION, 0) > 0) {
+                if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0) {
                     if (!orgCanvas.isEmpty()) {
                         return false;
                     }
@@ -39,7 +39,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     }
 
                     orgCanvas = stack;
-                } else if (stack.getItem() instanceof ItemCanvas && stack.get(Items.CANVAS_GENERATION) == null) {
+                } else if (stack.getItem() instanceof ItemCanvas && stack.get(Items.CANVAS_GENERATION.get()) == null) {
                     if (!freshCanvas.isEmpty()) {
                         return false;
                     }
@@ -66,7 +66,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack stack = inv.getItem(j);
             if (!stack.isEmpty()) {
-                if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION, 0) > 0) {
+                if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0) {
                     if (!orgCanvas.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
@@ -75,7 +75,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     }
 
                     orgCanvas = stack;
-                } else if (stack.getItem() instanceof ItemCanvas && stack.get(Items.CANVAS_GENERATION) == null) {
+                } else if (stack.getItem() instanceof ItemCanvas && stack.get(Items.CANVAS_GENERATION.get()) == null) {
                     if (!freshCanvas.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
@@ -88,15 +88,15 @@ public class RecipeCanvasCloning extends CustomRecipe {
             }
         }
 
-        int gen = orgCanvas.getOrDefault(Items.CANVAS_GENERATION, 0);
+        int gen = orgCanvas.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
         if (!orgCanvas.isEmpty() && !freshCanvas.isEmpty() && gen > 0 && gen < 3) {
             ItemStack resultStack = new ItemStack(orgCanvas.getItem());
-            resultStack.set(Items.CANVAS_GENERATION, gen + 1);
-            resultStack.set(Items.CANVAS_PIXELS, orgCanvas.get(Items.CANVAS_PIXELS));
-            resultStack.set(Items.CANVAS_ID, orgCanvas.get(Items.CANVAS_ID));
-            resultStack.set(Items.CANVAS_VERSION, orgCanvas.get(Items.CANVAS_VERSION));
-            resultStack.set(Items.CANVAS_TITLE, orgCanvas.get(Items.CANVAS_TITLE));
-            resultStack.set(Items.CANVAS_AUTHOR, orgCanvas.get(Items.CANVAS_AUTHOR));
+            resultStack.set(Items.CANVAS_GENERATION.get(), gen + 1);
+            resultStack.set(Items.CANVAS_PIXELS.get(), orgCanvas.get(Items.CANVAS_PIXELS.get()));
+            resultStack.set(Items.CANVAS_ID.get(), orgCanvas.get(Items.CANVAS_ID.get()));
+            resultStack.set(Items.CANVAS_VERSION.get(), orgCanvas.get(Items.CANVAS_VERSION.get()));
+            resultStack.set(Items.CANVAS_TITLE.get(), orgCanvas.get(Items.CANVAS_TITLE.get()));
+            resultStack.set(Items.CANVAS_AUTHOR.get(), orgCanvas.get(Items.CANVAS_AUTHOR.get()));
             return resultStack;
         } else {
             return ItemStack.EMPTY;
@@ -109,7 +109,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
 
         for (int i = 0; i < nonnulllist.size(); ++i) {
             ItemStack stack = inv.getItem(i);
-            if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION, 0) > 0) {
+            if (stack.getItem() instanceof ItemCanvas && stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0) {
                 ItemStack itemstack1 = stack.copy();
                 itemstack1.setCount(1);
                 nonnulllist.set(i, itemstack1);
@@ -121,7 +121,12 @@ public class RecipeCanvasCloning extends CustomRecipe {
     }
 
     @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return width * height >= 2;
+    }
+
+    @Override
     public RecipeSerializer<RecipeCanvasCloning> getSerializer() {
-        return Items.CRAFTING_SPECIAL_CANVAS_CLONING;
+        return Items.CRAFTING_SPECIAL_CANVAS_CLONING.get();
     }
 }

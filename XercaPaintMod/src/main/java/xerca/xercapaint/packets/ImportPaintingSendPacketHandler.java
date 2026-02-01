@@ -1,17 +1,16 @@
 package xerca.xercapaint.packets;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xerca.xercapaint.CommandImport;
 
-public class ImportPaintingSendPacketHandler implements ServerPlayNetworking.PlayPayloadHandler<ImportPaintingSendPacket> {
+public class ImportPaintingSendPacketHandler {
 
     private static void processMessage(ImportPaintingSendPacket msg, ServerPlayer sender) {
         CommandImport.doImport(msg.tag(), sender);
     }
 
-    @Override
-    public void receive(ImportPaintingSendPacket packet, ServerPlayNetworking.Context context) {
-        context.server().execute(() -> processMessage(packet, context.player()));
+    public static void handle(ImportPaintingSendPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> processMessage(packet, (ServerPlayer) context.player()));
     }
 }

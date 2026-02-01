@@ -7,3 +7,6 @@ run/
 builds/
 desktop.ini
 **/.cache
+/.claude/
+/XercaPaintMod/runs/
+/XercaMusicMod/runs/

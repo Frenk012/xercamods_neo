@@ -174,7 +174,7 @@ public class BlockMusicBox extends HorizontalDirectionalBlock implements EntityB
             ejectItem(level, pos, state, true, false);
             return ItemInteractionResult.SUCCESS;
         } else if (hitResult.getDirection() == state.getValue(FACING).getOpposite() && state.getValue(HAS_INSTRUMENT)) {
-            if (heldItem.getItem() == Items.MUSIC_SHEET && !state.getValue(HAS_MUSIC)) {
+            if (heldItem.getItem() == Items.MUSIC_SHEET.get() && !state.getValue(HAS_MUSIC)) {
                 return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             }
             level.playSound(player, pos, SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.1F + 0.9F);
@@ -186,7 +186,7 @@ public class BlockMusicBox extends HorizontalDirectionalBlock implements EntityB
 
     @Override
     public void onRemove(BlockState state, @NotNull Level worldIn, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
-        if (state.getBlock() != Blocks.MUSIC_BOX || newState.getBlock() != Blocks.MUSIC_BOX) {
+        if (state.getBlock() != Blocks.MUSIC_BOX.get() || newState.getBlock() != Blocks.MUSIC_BOX.get()) {
             ejectItem(worldIn, pos, state, true, true);
             ejectItem(worldIn, pos, state, false, true);
 

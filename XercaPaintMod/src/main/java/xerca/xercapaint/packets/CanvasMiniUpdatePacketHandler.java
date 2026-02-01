@@ -1,9 +1,9 @@
 package xerca.xercapaint.packets;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.entity.EntityEasel;
 import xerca.xercapaint.item.ItemCanvas;
@@ -12,7 +12,7 @@ import xerca.xercapaint.item.Items;
 
 import java.util.Arrays;
 
-public class CanvasMiniUpdatePacketHandler implements ServerPlayNetworking.PlayPayloadHandler<CanvasMiniUpdatePacket> {
+public class CanvasMiniUpdatePacketHandler {
     public static void processMessage(CanvasMiniUpdatePacket msg, ServerPlayer pl) {
         ItemStack canvas;
         ItemStack palette;
@@ -42,10 +42,10 @@ public class CanvasMiniUpdatePacketHandler implements ServerPlayNetworking.PlayP
         }
 
         if (!canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
-            canvas.set(Items.CANVAS_PIXELS, Arrays.stream(msg.pixels()).boxed().toList());
-            canvas.set(Items.CANVAS_ID, msg.canvasId());
-            canvas.set(Items.CANVAS_VERSION, msg.version());
-            canvas.set(Items.CANVAS_GENERATION, 0);
+            canvas.set(Items.CANVAS_PIXELS.get(), Arrays.stream(msg.pixels()).boxed().toList());
+            canvas.set(Items.CANVAS_ID.get(), msg.canvasId());
+            canvas.set(Items.CANVAS_VERSION.get(), msg.version());
+            canvas.set(Items.CANVAS_GENERATION.get(), 0);
 
             if (entityEasel instanceof EntityEasel easel) {
                 easel.setItem(canvas, false);
@@ -55,10 +55,9 @@ public class CanvasMiniUpdatePacketHandler implements ServerPlayNetworking.PlayP
         }
     }
 
-    @Override
-    public void receive(CanvasMiniUpdatePacket packet, ServerPlayNetworking.Context context) {
+    public static void handle(CanvasMiniUpdatePacket packet, IPayloadContext context) {
         if (packet != null) {
-            context.server().execute(() -> processMessage(packet, context.player()));
+            context.enqueueWork(() -> processMessage(packet, (ServerPlayer) context.player()));
         }
     }
 }

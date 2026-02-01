@@ -9,11 +9,13 @@ import xerca.xercamusic.common.Mod;
 import xerca.xercamusic.common.item.IItemInstrument;
 import xerca.xercamusic.common.item.Items;
 
+import java.util.List;
+
 
 public record SingleNoteClientPacket(int note, IItemInstrument instrumentItem, int playerId, boolean isStop,
                                      float volume) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<SingleNoteClientPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("single_note_client"));
-    public static final StreamCodec<FriendlyByteBuf, SingleNoteClientPacket> PACKET_CODEC = StreamCodec.ofMember(SingleNoteClientPacket::encode, SingleNoteClientPacket::decode);
+    public static final CustomPacketPayload.Type<SingleNoteClientPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("single_note_client"));
+    public static final StreamCodec<FriendlyByteBuf, SingleNoteClientPacket> STREAM_CODEC = StreamCodec.ofMember(SingleNoteClientPacket::encode, SingleNoteClientPacket::decode);
 
     public SingleNoteClientPacket(int note, IItemInstrument instrumentItem, Player playerEntity, boolean isStop, float volume) {
         this(note, instrumentItem, playerEntity.getId(), isStop, volume);
@@ -26,12 +28,13 @@ public record SingleNoteClientPacket(int note, IItemInstrument instrumentItem, i
         boolean isStop = buf.readBoolean();
         float volume = buf.readFloat();
 
-        if (instrumentId < 0 || instrumentId >= Items.INSTRUMENTS.size()) {
+        List<IItemInstrument> instruments = Items.getInstruments();
+        if (instrumentId < 0 || instrumentId >= instruments.size()) {
             Mod.LOGGER.warn("Invalid instrumentId: {}", instrumentId);
             instrumentId = 0;
         }
 
-        IItemInstrument instrumentItem = Items.INSTRUMENTS.get(instrumentId);
+        IItemInstrument instrumentItem = instruments.get(instrumentId);
         return new SingleNoteClientPacket(note, instrumentItem, playerId, isStop, volume);
     }
 
@@ -47,6 +50,6 @@ public record SingleNoteClientPacket(int note, IItemInstrument instrumentItem, i
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

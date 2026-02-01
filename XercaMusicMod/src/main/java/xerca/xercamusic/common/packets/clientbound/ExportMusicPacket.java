@@ -8,8 +8,8 @@ import xerca.xercamusic.common.Mod;
 
 @SuppressWarnings("unused")
 public record ExportMusicPacket(String name) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<ExportMusicPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("export_music"));
-    public static final StreamCodec<FriendlyByteBuf, ExportMusicPacket> PACKET_CODEC = StreamCodec.ofMember(ExportMusicPacket::encode, ExportMusicPacket::decode);
+    public static final CustomPacketPayload.Type<ExportMusicPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("export_music"));
+    public static final StreamCodec<FriendlyByteBuf, ExportMusicPacket> STREAM_CODEC = StreamCodec.ofMember(ExportMusicPacket::encode, ExportMusicPacket::decode);
 
     public static ExportMusicPacket decode(FriendlyByteBuf buf) {
         String name = buf.readUtf(64);
@@ -22,6 +22,6 @@ public record ExportMusicPacket(String name) implements CustomPacketPayload {
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

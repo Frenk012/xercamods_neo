@@ -68,15 +68,15 @@ public class BlockMetronome extends BaseEntityBlock {
     @Override
     public @NotNull ItemInteractionResult useItemOn(@NotNull ItemStack stack, @NotNull BlockState state, Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, @NotNull BlockHitResult hitResult) {
         if (!level.isClientSide) {
-            level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.METRONOME_SET, SoundSource.BLOCKS, 1.0f, 1.0f);
+            level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.METRONOME_SET.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
             ItemStack note = ItemStack.EMPTY;
-            if (player.getMainHandItem().getItem() == Items.MUSIC_SHEET) {
+            if (player.getMainHandItem().getItem() == Items.MUSIC_SHEET.get()) {
                 note = player.getMainHandItem();
-            } else if (player.getOffhandItem().getItem() == Items.MUSIC_SHEET) {
+            } else if (player.getOffhandItem().getItem() == Items.MUSIC_SHEET.get()) {
                 note = player.getOffhandItem();
             }
 
-            int bps = note.getOrDefault(Items.SHEET_BPS, (byte) 0);
+            int bps = note.getOrDefault(Items.SHEET_BPS.get(), (byte) 0);
             if (!note.isEmpty() && bps > 0) {
                 setBps(state, level, pos, bps);
                 return ItemInteractionResult.SUCCESS;

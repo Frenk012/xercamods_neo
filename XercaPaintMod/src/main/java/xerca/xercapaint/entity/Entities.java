@@ -1,25 +1,26 @@
 package xerca.xercapaint.entity;
 
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.entity.EntityAttachments;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import xerca.xercapaint.Mod;
 
 public class Entities {
-    public static final EntityType<EntityCanvas> CANVAS = FabricEntityTypeBuilder.<EntityCanvas>create(MobCategory.MISC, EntityCanvas::new)
-            .dimensions(new EntityDimensions(0.5f, 0.5f, 0.5f, EntityAttachments.createDefault(0.5f, 0.5f), true)).trackedUpdateRate(2147483647).build(ResourceKey.create(Registries.ENTITY_TYPE, Mod.id("canvas")));
+    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
+            DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, Mod.MODID);
 
-    public static final EntityType<EntityEasel> EASEL = FabricEntityTypeBuilder.<EntityEasel>create(MobCategory.MISC, EntityEasel::new)
-            .dimensions(new EntityDimensions(0.8f, 1.975F, 1.8F, EntityAttachments.createDefault(0.5f, 0.5f), true)).build(ResourceKey.create(Registries.ENTITY_TYPE, Mod.id("easel")));
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCanvas>> CANVAS =
+            ENTITY_TYPES.register("canvas", () -> EntityType.Builder.<EntityCanvas>of(EntityCanvas::new, MobCategory.MISC)
+                    .sized(0.5f, 0.5f)
+                    .clientTrackingRange(10)
+                    .updateInterval(Integer.MAX_VALUE)
+                    .build(Mod.id("canvas").toString()));
 
-    public static void registerEntities() {
-        Registry.register(BuiltInRegistries.ENTITY_TYPE, Mod.id("canvas"), CANVAS);
-        Registry.register(BuiltInRegistries.ENTITY_TYPE, Mod.id("easel"), EASEL);
-    }
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityEasel>> EASEL =
+            ENTITY_TYPES.register("easel", () -> EntityType.Builder.<EntityEasel>of(EntityEasel::new, MobCategory.MISC)
+                    .sized(0.8f, 1.975f)
+                    .clientTrackingRange(10)
+                    .build(Mod.id("easel").toString()));
 }

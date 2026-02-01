@@ -1,6 +1,5 @@
 package xerca.xercamusic.common.tile_entity;
 
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -9,10 +8,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -29,8 +31,6 @@ import xerca.xercamusic.common.packets.clientbound.MusicBoxUpdatePacket;
 
 import java.util.ArrayList;
 import java.util.UUID;
-
-import static xerca.xercamusic.common.Mod.sendToClient;
 
 public class TileEntityMusicBox extends BlockEntity {
     private final ArrayList<NoteEvent> notes = new ArrayList<>();
@@ -50,7 +50,7 @@ public class TileEntityMusicBox extends BlockEntity {
     private static final String KEY_INS_ID = "instrument_id";
 
     public TileEntityMusicBox(BlockPos blockPos, BlockState blockState) {
-        super(BlockEntities.MUSIC_BOX, blockPos, blockState);
+        super(BlockEntities.MUSIC_BOX.get(), blockPos, blockState);
         if (blockState.getValue(BlockMusicBox.POWERED)) {
             oldPoweredState = true;
         }
@@ -58,10 +58,10 @@ public class TileEntityMusicBox extends BlockEntity {
 
     public static void tick(Level level, BlockPos blockPos, BlockState state, TileEntityMusicBox t) {
         if (level != null && !t.sheetStack.isEmpty() && t.notes.isEmpty() && !ItemMusicSheet.isEmptySheet(t.sheetStack)) {
-            UUID id = t.sheetStack.get(Items.SHEET_ID);
-            int ver = t.sheetStack.getOrDefault(Items.SHEET_VERSION, -1);
-            byte bps = t.sheetStack.getOrDefault(Items.SHEET_BPS, (byte) 0);
-            int length = t.sheetStack.getOrDefault(Items.SHEET_LENGTH, 0);
+            UUID id = t.sheetStack.get(Items.SHEET_ID.get());
+            int ver = t.sheetStack.getOrDefault(Items.SHEET_VERSION.get(), -1);
+            byte bps = t.sheetStack.getOrDefault(Items.SHEET_BPS.get(), (byte) 0);
+            int length = t.sheetStack.getOrDefault(Items.SHEET_LENGTH.get(), 0);
             if (id != null && ver >= 0 && bps > 0 && length > 0) {
                 if (level.isClientSide) {
                     MusicManagerClient.checkMusicDataAndRun(id, ver, () -> {
@@ -219,9 +219,9 @@ public class TileEntityMusicBox extends BlockEntity {
 
             this.sheetStack = sheetStack;
             if (!ItemMusicSheet.isEmptySheet(sheetStack)) {
-                bps = sheetStack.getOrDefault(Items.SHEET_BPS, (byte) 8);
-                volume = sheetStack.getOrDefault(Items.SHEET_VOLUME, 1.f);
-                length = sheetStack.getOrDefault(Items.SHEET_LENGTH, 0);
+                bps = sheetStack.getOrDefault(Items.SHEET_BPS.get(), (byte) 8);
+                volume = sheetStack.getOrDefault(Items.SHEET_VOLUME.get(), 1.f);
+                length = sheetStack.getOrDefault(Items.SHEET_LENGTH.get(), 0);
             } else {
                 this.notes.clear();
             }
@@ -270,8 +270,8 @@ public class TileEntityMusicBox extends BlockEntity {
     // Send update to clients
     private void updateClient(ItemStack sheetStack, Item itemInstrument) {
         MusicBoxUpdatePacket packet = MusicBoxUpdatePacket.create(worldPosition, sheetStack, itemInstrument);
-        for (ServerPlayer player : PlayerLookup.tracking(this)) {
-            sendToClient(player, packet);
+        if (level instanceof ServerLevel serverLevel) {
+            PacketDistributor.sendToPlayersTrackingChunk(serverLevel, new ChunkPos(worldPosition), packet);
         }
     }
 

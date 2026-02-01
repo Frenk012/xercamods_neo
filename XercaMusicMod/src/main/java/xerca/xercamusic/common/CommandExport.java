@@ -68,9 +68,9 @@ public final class CommandExport {
     }
 
     private static void exportSheetIfValid(ItemStack stack, Path filePath) {
-        UUID id = stack.get(Items.SHEET_ID);
-        int ver = stack.getOrDefault(Items.SHEET_VERSION, -1);
-        int length = stack.getOrDefault(Items.SHEET_LENGTH, 0);
+        UUID id = stack.get(Items.SHEET_ID.get());
+        int ver = stack.getOrDefault(Items.SHEET_VERSION.get(), -1);
+        int length = stack.getOrDefault(Items.SHEET_LENGTH.get(), 0);
 
         if (id == null || ver < 0 || length <= 0) {
             return;
@@ -89,14 +89,14 @@ public final class CommandExport {
         tag.putInt(KEY_VERSION, ver);
         tag.putUUID(KEY_ID, id);
         tag.putInt(KEY_LENGTH, length);
-        tag.putInt(KEY_GENERATION, stack.getOrDefault(Items.SHEET_GENERATION, 0));
+        tag.putInt(KEY_GENERATION, stack.getOrDefault(Items.SHEET_GENERATION.get(), 0));
 
-        putOptionalByte(stack, Items.SHEET_BPS, tag, KEY_BPS);
-        putOptionalBoolean(stack, Items.SHEET_PREV_INSTRUMENT_LOCKED, tag, KEY_PREV_INSTRUMENT_LOCKED);
-        putOptionalByte(stack, Items.SHEET_PREV_INSTRUMENT, tag, KEY_PREV_INSTRUMENT);
+        putOptionalByte(stack, Items.SHEET_BPS.get(), tag, KEY_BPS);
+        putOptionalBoolean(stack, Items.SHEET_PREV_INSTRUMENT_LOCKED.get(), tag, KEY_PREV_INSTRUMENT_LOCKED);
+        putOptionalByte(stack, Items.SHEET_PREV_INSTRUMENT.get(), tag, KEY_PREV_INSTRUMENT);
         putOptionalTitleAuthor(stack, tag);
-        putOptionalByte(stack, Items.SHEET_HIGHLIGHT_INTERVAL, tag, KEY_HIGHLIGHT_INTERVAL);
-        putOptionalFloat(stack, Items.SHEET_VOLUME, tag, KEY_VOLUME);
+        putOptionalByte(stack, Items.SHEET_HIGHLIGHT_INTERVAL.get(), tag, KEY_HIGHLIGHT_INTERVAL);
+        putOptionalFloat(stack, Items.SHEET_VOLUME.get(), tag, KEY_VOLUME);
 
         NoteEvent.fillNBTFromArray(data.notes(), tag);
 
@@ -129,8 +129,8 @@ public final class CommandExport {
     }
 
     private static void putOptionalTitleAuthor(ItemStack stack, CompoundTag tag) {
-        String title = stack.get(Items.SHEET_TITLE);
-        String author = stack.get(Items.SHEET_AUTHOR);
+        String title = stack.get(Items.SHEET_TITLE.get());
+        String author = stack.get(Items.SHEET_AUTHOR.get());
         if (title != null && author != null) {
             tag.putString(KEY_TITLE, title);
             tag.putString(KEY_AUTHOR, author);

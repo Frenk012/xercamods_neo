@@ -57,6 +57,6 @@ public class BlockDrums extends BlockInstrument {
 
     @Override
     public IItemInstrument getItemInstrument() {
-        return (IItemInstrument) Items.DRUM_KIT;
+        return (IItemInstrument) Items.DRUM_KIT.get();
     }
 }

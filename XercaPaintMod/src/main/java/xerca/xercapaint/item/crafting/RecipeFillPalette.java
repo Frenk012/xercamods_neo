@@ -91,7 +91,8 @@ public class RecipeFillPalette extends CustomRecipe {
         }
 
         ItemStack inputPalette = inv.getItem(paletteId);
-        byte[] basicColors = inputPalette.getOrDefault(Items.PALETTE_BASIC_COLORS, new byte[16]).clone();
+        Items.BasicColors inputColors = inputPalette.getOrDefault(Items.PALETTE_BASIC_COLORS.get(), Items.BasicColors.empty());
+        byte[] basicColors = inputColors.colors().clone();
 
         for (ItemStack dye : dyes) {
             DyeColor color = ((DyeItem) (dye.getItem())).getDyeColor();
@@ -103,8 +104,8 @@ public class RecipeFillPalette extends CustomRecipe {
             basicColors[realColorId] = 1;
         }
 
-        ItemStack result = new ItemStack(Items.ITEM_PALETTE);
-        result.set(Items.PALETTE_BASIC_COLORS, basicColors);
+        ItemStack result = new ItemStack(Items.ITEM_PALETTE.get());
+        result.set(Items.PALETTE_BASIC_COLORS.get(), new Items.BasicColors(basicColors));
         return result;
     }
 
@@ -114,7 +115,12 @@ public class RecipeFillPalette extends CustomRecipe {
     }
 
     @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return width * height >= 2;
+    }
+
+    @Override
     public RecipeSerializer<RecipeFillPalette> getSerializer() {
-        return Items.CRAFTING_SPECIAL_PALETTE_FILLING;
+        return Items.CRAFTING_SPECIAL_PALETTE_FILLING.get();
     }
 }

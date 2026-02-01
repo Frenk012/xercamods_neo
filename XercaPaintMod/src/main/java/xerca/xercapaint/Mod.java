@@ -1,54 +1,84 @@
 package xerca.xercapaint;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xerca.xercapaint.block.Blocks;
+import xerca.xercapaint.block_entity.BlockEntities;
 import xerca.xercapaint.entity.Entities;
 import xerca.xercapaint.item.Items;
 import xerca.xercapaint.packets.*;
 
-public class Mod implements ModInitializer {
+@net.neoforged.fml.common.Mod(Mod.MODID)
+public class Mod {
     public static final String MODID = "xercapaint";
     public static final Logger LOGGER = LogManager.getLogger(MODID);
 
-    @Override
-    public void onInitialize() {
-        Items.registerItems();
-        Items.registerRecipes();
-        Items.registerDataComponents();
-        Entities.registerEntities();
-        SoundEvents.registerSoundEvents();
+    public Mod(IEventBus modEventBus, ModContainer modContainer) {
+        // Register deferred registries
+        Items.ITEMS.register(modEventBus);
+        Items.DATA_COMPONENT_TYPES.register(modEventBus);
+        Items.RECIPE_SERIALIZERS.register(modEventBus);
+        Items.CREATIVE_MODE_TABS.register(modEventBus);
+        Blocks.BLOCKS.register(modEventBus);
+        BlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        Entities.ENTITY_TYPES.register(modEventBus);
+        SoundEvents.SOUND_EVENTS.register(modEventBus);
 
-        PayloadTypeRegistry.playS2C().register(CloseGuiPacket.PACKET_ID, CloseGuiPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(ExportPaintingPacket.PACKET_ID, ExportPaintingPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(ImportPaintingPacket.PACKET_ID, ImportPaintingPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(OpenGuiPacket.PACKET_ID, OpenGuiPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(PictureSendPacket.PACKET_ID, PictureSendPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(CanvasUpdatePacket.PACKET_ID, CanvasUpdatePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(CanvasMiniUpdatePacket.PACKET_ID, CanvasMiniUpdatePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(EaselLeftPacket.PACKET_ID, EaselLeftPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(ImportPaintingSendPacket.PACKET_ID, ImportPaintingSendPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(PaletteUpdatePacket.PACKET_ID, PaletteUpdatePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(PictureRequestPacket.PACKET_ID, PictureRequestPacket.PACKET_CODEC);
+        // Register mod event handlers
+        modEventBus.addListener(this::onRegisterPayloads);
 
-        ServerPlayNetworking.registerGlobalReceiver(CanvasUpdatePacket.PACKET_ID, new CanvasUpdatePacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(CanvasMiniUpdatePacket.PACKET_ID, new CanvasMiniUpdatePacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(EaselLeftPacket.PACKET_ID, new EaselLeftPacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(ImportPaintingSendPacket.PACKET_ID, new ImportPaintingSendPacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(PaletteUpdatePacket.PACKET_ID, new PaletteUpdatePacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(PictureRequestPacket.PACKET_ID, new PictureRequestPacketHandler());
+        // Register game event handlers
+        NeoForge.EVENT_BUS.register(this);
+    }
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, env) -> {
-            CommandImport.register(dispatcher);
-            CommandExport.register(dispatcher);
-        });
+    private void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(MODID).versioned("1.0.0");
+
+        // Server-to-Client packets (S2C)
+        if (FMLEnvironment.dist.isClient()) {
+            // On client: register with actual handlers
+            xerca.xercapaint.client.ClientPacketHandler.registerClientPackets(registrar);
+        } else {
+            // On server: register with no-op handlers (server only sends these, never receives)
+            registrar.playToClient(CloseGuiPacket.TYPE, CloseGuiPacket.STREAM_CODEC, (packet, context) -> {});
+            registrar.playToClient(ExportPaintingPacket.TYPE, ExportPaintingPacket.STREAM_CODEC, (packet, context) -> {});
+            registrar.playToClient(ImportPaintingPacket.TYPE, ImportPaintingPacket.STREAM_CODEC, (packet, context) -> {});
+            registrar.playToClient(OpenGuiPacket.TYPE, OpenGuiPacket.STREAM_CODEC, (packet, context) -> {});
+            registrar.playToClient(PictureSendPacket.TYPE, PictureSendPacket.STREAM_CODEC, (packet, context) -> {});
+        }
+
+        // Client-to-Server packets (C2S)
+        registrar.playToServer(CanvasUpdatePacket.TYPE, CanvasUpdatePacket.STREAM_CODEC, CanvasUpdatePacketHandler::handle);
+        registrar.playToServer(CanvasMiniUpdatePacket.TYPE, CanvasMiniUpdatePacket.STREAM_CODEC, CanvasMiniUpdatePacketHandler::handle);
+        registrar.playToServer(EaselLeftPacket.TYPE, EaselLeftPacket.STREAM_CODEC, EaselLeftPacketHandler::handle);
+        registrar.playToServer(ImportPaintingSendPacket.TYPE, ImportPaintingSendPacket.STREAM_CODEC, ImportPaintingSendPacketHandler::handle);
+        registrar.playToServer(PaletteUpdatePacket.TYPE, PaletteUpdatePacket.STREAM_CODEC, PaletteUpdatePacketHandler::handle);
+        registrar.playToServer(PictureRequestPacket.TYPE, PictureRequestPacket.STREAM_CODEC, PictureRequestPacketHandler::handle);
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        CommandImport.register(event.getDispatcher());
+        CommandExport.register(event.getDispatcher());
+    }
+
+    public static void sendToClient(ServerPlayer player, CustomPacketPayload packet) {
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static ResourceLocation id(String location) {

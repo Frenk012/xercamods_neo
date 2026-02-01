@@ -9,8 +9,8 @@ import xerca.xercamusic.common.Mod;
 import java.util.UUID;
 
 public record NotesPartAckFromServerPacket(UUID id) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<NotesPartAckFromServerPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("notes_part_ack_from_server"));
-    public static final StreamCodec<FriendlyByteBuf, NotesPartAckFromServerPacket> PACKET_CODEC = StreamCodec.ofMember(NotesPartAckFromServerPacket::encode, NotesPartAckFromServerPacket::decode);
+    public static final CustomPacketPayload.Type<NotesPartAckFromServerPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("notes_part_ack_from_server"));
+    public static final StreamCodec<FriendlyByteBuf, NotesPartAckFromServerPacket> STREAM_CODEC = StreamCodec.ofMember(NotesPartAckFromServerPacket::encode, NotesPartAckFromServerPacket::decode);
 
     public static NotesPartAckFromServerPacket decode(FriendlyByteBuf buf) {
         UUID id = buf.readUUID();
@@ -23,7 +23,7 @@ public record NotesPartAckFromServerPacket(UUID id) implements CustomPacketPaylo
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }
 

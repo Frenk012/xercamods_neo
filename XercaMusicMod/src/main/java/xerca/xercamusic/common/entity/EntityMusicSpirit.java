@@ -44,7 +44,7 @@ public class EntityMusicSpirit extends Entity {
     private SoundController soundController = null;
 
     public EntityMusicSpirit(Level worldIn) {
-        super(Entities.MUSIC_SPIRIT, worldIn);
+        super(Entities.MUSIC_SPIRIT.get(), worldIn);
     }
 
     public EntityMusicSpirit(Level worldIn, Player body, IItemInstrument instrument) {
@@ -85,9 +85,9 @@ public class EntityMusicSpirit extends Entity {
         ItemStack mainStack = body.getMainHandItem();
         ItemStack offStack = body.getOffhandItem();
         if (blockInstrument != null && blockInsPos != null) {
-            return mainStack.getItem() == Items.MUSIC_SHEET || offStack.getItem() == Items.MUSIC_SHEET;
+            return mainStack.getItem() == Items.MUSIC_SHEET.get() || offStack.getItem() == Items.MUSIC_SHEET.get();
         } else {
-            return offStack.getItem() == Items.MUSIC_SHEET && mainStack.getItem() == instrument;
+            return offStack.getItem() == Items.MUSIC_SHEET.get() && mainStack.getItem() == instrument;
         }
     }
 
@@ -98,9 +98,9 @@ public class EntityMusicSpirit extends Entity {
         }
         ItemStack mainStack = body.getMainHandItem();
         ItemStack offStack = body.getOffhandItem();
-        if (mainStack.getItem() == Items.MUSIC_SHEET) {
+        if (mainStack.getItem() == Items.MUSIC_SHEET.get()) {
             this.note = mainStack;
-        } else if (offStack.getItem() == Items.MUSIC_SHEET) {
+        } else if (offStack.getItem() == Items.MUSIC_SHEET.get()) {
             this.note = offStack;
         } else {
             Mod.LOGGER.warn("No music sheet found on body");
@@ -192,15 +192,15 @@ public class EntityMusicSpirit extends Entity {
         if (note == null || !level().isClientSide) {
             return;
         }
-        UUID id = note.get(Items.SHEET_ID);
-        int ver = note.getOrDefault(Items.SHEET_VERSION, -1);
-        length = note.getOrDefault(Items.SHEET_LENGTH, 0);
+        UUID id = note.get(Items.SHEET_ID.get());
+        int ver = note.getOrDefault(Items.SHEET_VERSION.get(), -1);
+        length = note.getOrDefault(Items.SHEET_LENGTH.get(), 0);
         if (id == null || ver < 0 || length <= 0) {
             return;
         }
 
-        bps = note.getOrDefault(Items.SHEET_BPS, (byte) 8);
-        volume = note.getOrDefault(Items.SHEET_VOLUME, 1.f);
+        bps = note.getOrDefault(Items.SHEET_BPS.get(), (byte) 8);
+        volume = note.getOrDefault(Items.SHEET_VOLUME.get(), 1.f);
         MusicManagerClient.checkMusicDataAndRun(id, ver, () -> {
             MusicManager.MusicData data = MusicManagerClient.getMusicData(id, ver);
             if (data != null) {

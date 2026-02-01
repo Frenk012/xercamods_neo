@@ -28,13 +28,13 @@ public class RecipeNoteCloning extends CustomRecipe {
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack item = inv.getItem(j);
             if (!item.isEmpty()) {
-                if (item.getItem() == Items.MUSIC_SHEET && item.getOrDefault(Items.SHEET_GENERATION, 0) > 0) {
+                if (item.getItem() == Items.MUSIC_SHEET.get() && item.getOrDefault(Items.SHEET_GENERATION.get(), 0) > 0) {
                     if (!orgNote.isEmpty()) {
                         return false;
                     }
 
                     orgNote = item;
-                } else if (item.getItem() == Items.MUSIC_SHEET && ItemMusicSheet.isEmptySheet(item)) {
+                } else if (item.getItem() == Items.MUSIC_SHEET.get() && ItemMusicSheet.isEmptySheet(item)) {
                     if (!freshNote.isEmpty()) {
                         return false;
                     }
@@ -55,13 +55,13 @@ public class RecipeNoteCloning extends CustomRecipe {
         for (int j = 0; j < inv.size(); ++j) {
             ItemStack item = inv.getItem(j);
             if (!item.isEmpty()) {
-                if (item.getItem() == Items.MUSIC_SHEET && item.getOrDefault(Items.SHEET_GENERATION, 0) > 0) {
+                if (item.getItem() == Items.MUSIC_SHEET.get() && item.getOrDefault(Items.SHEET_GENERATION.get(), 0) > 0) {
                     if (!orgNote.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
 
                     orgNote = item;
-                } else if (item.getItem() == Items.MUSIC_SHEET && ItemMusicSheet.isEmptySheet(item)) {
+                } else if (item.getItem() == Items.MUSIC_SHEET.get() && ItemMusicSheet.isEmptySheet(item)) {
                     if (!freshNote.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
@@ -71,18 +71,18 @@ public class RecipeNoteCloning extends CustomRecipe {
             }
         }
 
-        int gen = orgNote.getOrDefault(Items.SHEET_GENERATION, 0);
+        int gen = orgNote.getOrDefault(Items.SHEET_GENERATION.get(), 0);
         if (!orgNote.isEmpty() && !freshNote.isEmpty() && ItemMusicSheet.isEmptySheet(freshNote) && gen < 3 && gen > 0) {
-            ItemStack resultStack = new ItemStack(Items.MUSIC_SHEET);
-            resultStack.set(Items.SHEET_GENERATION, gen + 1);
-            resultStack.set(Items.SHEET_ID, orgNote.get(Items.SHEET_ID));
-            resultStack.set(Items.SHEET_VERSION, orgNote.get(Items.SHEET_VERSION));
-            resultStack.set(Items.SHEET_LENGTH, orgNote.get(Items.SHEET_LENGTH));
-            resultStack.set(Items.SHEET_BPS, orgNote.get(Items.SHEET_BPS));
-            resultStack.set(Items.SHEET_PREV_INSTRUMENT, orgNote.get(Items.SHEET_PREV_INSTRUMENT));
-            resultStack.set(Items.SHEET_VOLUME, orgNote.get(Items.SHEET_VOLUME));
-            resultStack.set(Items.SHEET_AUTHOR, orgNote.get(Items.SHEET_AUTHOR));
-            resultStack.set(Items.SHEET_TITLE, orgNote.get(Items.SHEET_TITLE));
+            ItemStack resultStack = new ItemStack(Items.MUSIC_SHEET.get());
+            resultStack.set(Items.SHEET_GENERATION.get(), gen + 1);
+            resultStack.set(Items.SHEET_ID.get(), orgNote.get(Items.SHEET_ID.get()));
+            resultStack.set(Items.SHEET_VERSION.get(), orgNote.get(Items.SHEET_VERSION.get()));
+            resultStack.set(Items.SHEET_LENGTH.get(), orgNote.get(Items.SHEET_LENGTH.get()));
+            resultStack.set(Items.SHEET_BPS.get(), orgNote.get(Items.SHEET_BPS.get()));
+            resultStack.set(Items.SHEET_PREV_INSTRUMENT.get(), orgNote.get(Items.SHEET_PREV_INSTRUMENT.get()));
+            resultStack.set(Items.SHEET_VOLUME.get(), orgNote.get(Items.SHEET_VOLUME.get()));
+            resultStack.set(Items.SHEET_AUTHOR.get(), orgNote.get(Items.SHEET_AUTHOR.get()));
+            resultStack.set(Items.SHEET_TITLE.get(), orgNote.get(Items.SHEET_TITLE.get()));
             return resultStack;
         } else {
             return ItemStack.EMPTY;
@@ -95,7 +95,7 @@ public class RecipeNoteCloning extends CustomRecipe {
 
         for (int i = 0; i < itemStacks.size(); ++i) {
             ItemStack itemStack = inv.getItem(i);
-            if (itemStack.getItem() == Items.MUSIC_SHEET && itemStack.getOrDefault(Items.SHEET_GENERATION, 0) > 0) {
+            if (itemStack.getItem() == Items.MUSIC_SHEET.get() && itemStack.getOrDefault(Items.SHEET_GENERATION.get(), 0) > 0) {
                 ItemStack copy = itemStack.copy();
                 copy.setCount(1);
                 itemStacks.set(i, copy);
@@ -108,7 +108,7 @@ public class RecipeNoteCloning extends CustomRecipe {
 
     @Override
     public RecipeSerializer<?> getSerializer() {
-        return Items.CRAFTING_SPECIAL_NOTECLONING;
+        return Items.CRAFTING_SPECIAL_NOTECLONING.get();
     }
 
     /**

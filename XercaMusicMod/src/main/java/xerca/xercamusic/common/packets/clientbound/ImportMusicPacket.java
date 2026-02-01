@@ -8,8 +8,8 @@ import xerca.xercamusic.common.Mod;
 
 
 public record ImportMusicPacket(String name) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<ImportMusicPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("import_music"));
-    public static final StreamCodec<FriendlyByteBuf, ImportMusicPacket> PACKET_CODEC = StreamCodec.ofMember(ImportMusicPacket::encode, ImportMusicPacket::decode);
+    public static final CustomPacketPayload.Type<ImportMusicPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("import_music"));
+    public static final StreamCodec<FriendlyByteBuf, ImportMusicPacket> STREAM_CODEC = StreamCodec.ofMember(ImportMusicPacket::encode, ImportMusicPacket::decode);
 
     public static ImportMusicPacket decode(FriendlyByteBuf buf) {
         String name = buf.readUtf(64);
@@ -22,6 +22,6 @@ public record ImportMusicPacket(String name) implements CustomPacketPayload {
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

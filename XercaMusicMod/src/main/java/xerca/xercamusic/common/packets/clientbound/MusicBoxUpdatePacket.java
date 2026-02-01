@@ -17,8 +17,8 @@ import java.util.UUID;
 
 public record MusicBoxUpdatePacket(BlockPos pos, String instrumentId, boolean sheetSent, boolean noSheet, UUID sheetId,
                                    int version, byte bps, int length, float volume) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<MusicBoxUpdatePacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("music_box_update"));
-    public static final StreamCodec<FriendlyByteBuf, MusicBoxUpdatePacket> PACKET_CODEC = StreamCodec.ofMember(MusicBoxUpdatePacket::encode, MusicBoxUpdatePacket::decode);
+    public static final CustomPacketPayload.Type<MusicBoxUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("music_box_update"));
+    public static final StreamCodec<FriendlyByteBuf, MusicBoxUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(MusicBoxUpdatePacket::encode, MusicBoxUpdatePacket::decode);
 
     public static MusicBoxUpdatePacket create(BlockPos pos, ItemStack sheetStack, Item itemInstrument) {
         String instrumentId = "";
@@ -28,11 +28,11 @@ public record MusicBoxUpdatePacket(BlockPos pos, String instrumentId, boolean sh
         }
 
         if (sheetStack != null) {
-            UUID sheetId = sheetStack.get(Items.SHEET_ID);
-            int version = sheetStack.getOrDefault(Items.SHEET_VERSION, -1);
-            byte bps = sheetStack.getOrDefault(Items.SHEET_BPS, (byte) 0);
-            int length = sheetStack.getOrDefault(Items.SHEET_LENGTH, 0);
-            float volume = sheetStack.getOrDefault(Items.SHEET_VOLUME, 1.f);
+            UUID sheetId = sheetStack.get(Items.SHEET_ID.get());
+            int version = sheetStack.getOrDefault(Items.SHEET_VERSION.get(), -1);
+            byte bps = sheetStack.getOrDefault(Items.SHEET_BPS.get(), (byte) 0);
+            int length = sheetStack.getOrDefault(Items.SHEET_LENGTH.get(), 0);
+            float volume = sheetStack.getOrDefault(Items.SHEET_VOLUME.get(), 1.f);
             if (sheetId != null && version >= 0 && bps > 0 && length > 0) {
                 return new MusicBoxUpdatePacket(pos, instrumentId, true, false, sheetId, version, bps, length, volume);
             } else {
@@ -79,6 +79,6 @@ public record MusicBoxUpdatePacket(BlockPos pos, String instrumentId, boolean sh
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

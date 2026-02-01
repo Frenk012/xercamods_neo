@@ -1,26 +1,27 @@
 package xerca.xercamusic.common;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.storage.loot.BuiltInLootTables;
-import net.minecraft.world.level.storage.loot.LootPool;
-import net.minecraft.world.level.storage.loot.entries.LootItem;
-import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xerca.xercamusic.common.block.Blocks;
 import xerca.xercamusic.common.entity.Entities;
 import xerca.xercamusic.common.item.Items;
+import xerca.xercamusic.common.loot.LootModifiers;
 import xerca.xercamusic.common.packets.clientbound.*;
 import xerca.xercamusic.common.packets.serverbound.*;
 import xerca.xercamusic.common.tile_entity.BlockEntities;
@@ -29,85 +30,86 @@ import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
-
-public class Mod implements ModInitializer {
+@net.neoforged.fml.common.Mod(Mod.MODID)
+public class Mod {
     public static final String MODID = "xercamusic";
     public static final Logger LOGGER = LogManager.getLogger();
     public static final int MAX_NOTES_IN_PACKET = 5000;
 
+    public Mod(IEventBus modEventBus, ModContainer modContainer) {
+        // Register deferred registries
+        Blocks.BLOCKS.register(modEventBus);
+        BlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        Items.ITEMS.register(modEventBus);
+        Items.DATA_COMPONENT_TYPES.register(modEventBus);
+        Items.RECIPE_SERIALIZERS.register(modEventBus);
+        Items.CREATIVE_MODE_TABS.register(modEventBus);
+        Entities.ENTITY_TYPES.register(modEventBus);
+        SoundEvents.SOUND_EVENTS.register(modEventBus);
+        Triggers.TRIGGERS.register(modEventBus);
+        LootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
+
+        // Register mod event handlers
+        modEventBus.addListener(this::onCommonSetup);
+        modEventBus.addListener(this::onRegisterPayloads);
+
+        // Register game event handlers
+        NeoForge.EVENT_BUS.register(this);
+    }
+
+    private void onCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            // Initialize sound events on instruments
+            SoundEvents.initInstrumentSounds();
+        });
+    }
+
+    private void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(MODID).versioned("1.0.0");
+
+        // Server-bound packets (Client -> Server)
+        registrar.playToServer(MusicUpdatePacket.TYPE, MusicUpdatePacket.STREAM_CODEC, MusicUpdatePacketHandler::handle);
+        registrar.playToServer(MusicEndedPacket.TYPE, MusicEndedPacket.STREAM_CODEC, MusicEndedPacketHandler::handle);
+        registrar.playToServer(ImportMusicSendPacket.TYPE, ImportMusicSendPacket.STREAM_CODEC, ImportMusicSendPacketHandler::handle);
+        registrar.playToServer(MusicDataRequestPacket.TYPE, MusicDataRequestPacket.STREAM_CODEC, MusicDataRequestPacketHandler::handle);
+        registrar.playToServer(SingleNotePacket.TYPE, SingleNotePacket.STREAM_CODEC, SingleNotePacketHandler::handle);
+        registrar.playToServer(SendNotesPartToServerPacket.TYPE, SendNotesPartToServerPacket.STREAM_CODEC, SendNotesPartToServerPacketHandler::handle);
+
+        // Client-bound packets (Server -> Client)
+        registrar.playToClient(ExportMusicPacket.TYPE, ExportMusicPacket.STREAM_CODEC, ExportMusicPacketHandler::handle);
+        registrar.playToClient(ImportMusicPacket.TYPE, ImportMusicPacket.STREAM_CODEC, ImportMusicPacketHandler::handle);
+        registrar.playToClient(MusicBoxUpdatePacket.TYPE, MusicBoxUpdatePacket.STREAM_CODEC, MusicBoxUpdatePacketHandler::handle);
+        registrar.playToClient(MusicDataResponsePacket.TYPE, MusicDataResponsePacket.STREAM_CODEC, MusicDataResponsePacketHandler::handle);
+        registrar.playToClient(NotesPartAckFromServerPacket.TYPE, NotesPartAckFromServerPacket.STREAM_CODEC, NotesPartAckFromServerPacketHandler::handle);
+        registrar.playToClient(SingleNoteClientPacket.TYPE, SingleNoteClientPacket.STREAM_CODEC, SingleNoteClientPacketHandler::handle);
+        registrar.playToClient(TripleNoteClientPacket.TYPE, TripleNoteClientPacket.STREAM_CODEC, TripleNoteClientPacketHandler::handle);
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        CommandImport.register(event.getDispatcher());
+        CommandExport.register(event.getDispatcher());
+    }
+
     public static void sendToClient(ServerPlayer player, CustomPacketPayload packet) {
-        ServerPlayNetworking.send(player, packet);
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     @Nullable
     public static <T> T onlyCallOnClient(Supplier<Callable<T>> toRun) throws Exception {
-        if (EnvType.CLIENT == FabricLoader.getInstance().getEnvironmentType()) {
+        if (FMLLoader.getDist() == Dist.CLIENT) {
             return toRun.get().call();
         }
         return null;
     }
 
     public static void onlyRunOnClient(Supplier<Runnable> toRun) {
-        if (EnvType.CLIENT == FabricLoader.getInstance().getEnvironmentType()) {
+        if (FMLLoader.getDist() == Dist.CLIENT) {
             toRun.get().run();
         }
     }
 
     public static ResourceLocation id(String location) {
         return ResourceLocation.fromNamespaceAndPath(MODID, location);
-    }
-
-    private void networkRegistry() {
-        PayloadTypeRegistry.playS2C().register(ExportMusicPacket.PACKET_ID, ExportMusicPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(ImportMusicPacket.PACKET_ID, ImportMusicPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(MusicBoxUpdatePacket.PACKET_ID, MusicBoxUpdatePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(MusicDataResponsePacket.PACKET_ID, MusicDataResponsePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(NotesPartAckFromServerPacket.PACKET_ID, NotesPartAckFromServerPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(SingleNoteClientPacket.PACKET_ID, SingleNoteClientPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playS2C().register(TripleNoteClientPacket.PACKET_ID, TripleNoteClientPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(MusicUpdatePacket.PACKET_ID, MusicUpdatePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(MusicEndedPacket.PACKET_ID, MusicEndedPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(ImportMusicSendPacket.PACKET_ID, ImportMusicSendPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(MusicDataRequestPacket.PACKET_ID, MusicDataRequestPacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(SingleNotePacket.PACKET_ID, SingleNotePacket.PACKET_CODEC);
-        PayloadTypeRegistry.playC2S().register(SendNotesPartToServerPacket.PACKET_ID, SendNotesPartToServerPacket.PACKET_CODEC);
-
-        ServerPlayNetworking.registerGlobalReceiver(MusicUpdatePacket.PACKET_ID, new MusicUpdatePacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(MusicEndedPacket.PACKET_ID, new MusicEndedPacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(ImportMusicSendPacket.PACKET_ID, new ImportMusicSendPacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(MusicDataRequestPacket.PACKET_ID, new MusicDataRequestPacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(SingleNotePacket.PACKET_ID, new SingleNotePacketHandler());
-        ServerPlayNetworking.registerGlobalReceiver(SendNotesPartToServerPacket.PACKET_ID, new SendNotesPartToServerPacketHandler());
-    }
-
-    private void registerTriggers() {
-        Registry.register(BuiltInRegistries.TRIGGER_TYPES, "become_musician", Triggers.BECOME_MUSICIAN);
-    }
-
-    @Override
-    public void onInitialize() {
-        networkRegistry();
-        registerTriggers();
-        Blocks.registerBlocks();
-        BlockEntities.registerBlockEntities();
-        Items.registerItems();
-        Items.registerRecipes();
-        Items.registerDataComponents();
-        Entities.registerEntities();
-        SoundEvents.registerSoundEvents();
-
-        // Registration for loot modifier (used for Voice of God in desert temples)
-        LootTableEvents.MODIFY.register((key, tableBuilder, source, registries) -> {
-            if (source.isBuiltin() && BuiltInLootTables.DESERT_PYRAMID.equals(key)) {
-                LootPool.Builder poolBuilder = LootPool.lootPool().when(LootItemRandomChanceCondition.randomChance(0.1f))
-                        .add(LootItem.lootTableItem(Items.GOD));
-                tableBuilder.withPool(poolBuilder);
-            }
-        });
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, env) -> {
-            CommandImport.register(dispatcher);
-            CommandExport.register(dispatcher);
-        });
     }
 }

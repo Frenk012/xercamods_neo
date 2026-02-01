@@ -5,7 +5,7 @@ import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundSource;
 import xerca.xercapaint.SoundEvents;
 
-@net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+@net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
 public class BrushSound extends AbstractTickableSoundInstance {
     private int age = 0;
     private int fadingTicks = 4;
@@ -13,7 +13,7 @@ public class BrushSound extends AbstractTickableSoundInstance {
     private static final float[] fadeVolumes = {0.0f, 0.3f, 0.7f};
 
     public BrushSound() {
-        super(SoundEvents.STROKE_LOOP, SoundSource.MASTER, SoundInstance.createUnseededRandom());
+        super(SoundEvents.STROKE_LOOP.get(), SoundSource.MASTER, SoundInstance.createUnseededRandom());
         volume = 1.0f;
         pitch = 1.0F;
         looping = true;

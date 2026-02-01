@@ -9,8 +9,8 @@ import xerca.xercamusic.common.Mod;
 import java.util.UUID;
 
 public record MusicDataRequestPacket(UUID id, int version) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<MusicDataRequestPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("music_data_request"));
-    public static final StreamCodec<FriendlyByteBuf, MusicDataRequestPacket> PACKET_CODEC = StreamCodec.ofMember(MusicDataRequestPacket::encode, MusicDataRequestPacket::decode);
+    public static final CustomPacketPayload.Type<MusicDataRequestPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("music_data_request"));
+    public static final StreamCodec<FriendlyByteBuf, MusicDataRequestPacket> STREAM_CODEC = StreamCodec.ofMember(MusicDataRequestPacket::encode, MusicDataRequestPacket::decode);
 
     public static MusicDataRequestPacket decode(FriendlyByteBuf buf) {
         UUID id = buf.readUUID();
@@ -25,6 +25,6 @@ public record MusicDataRequestPacket(UUID id, int version) implements CustomPack
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

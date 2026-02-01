@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.Mod;
 
 public record CloseGuiPacket() implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<CloseGuiPacket> PACKET_ID = new CustomPacketPayload.Type<>(Mod.id("close_gui"));
-    public static final StreamCodec<FriendlyByteBuf, CloseGuiPacket> PACKET_CODEC = StreamCodec.ofMember(CloseGuiPacket::encode, CloseGuiPacket::decode);
+    public static final CustomPacketPayload.Type<CloseGuiPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("close_gui"));
+    public static final StreamCodec<FriendlyByteBuf, CloseGuiPacket> STREAM_CODEC = StreamCodec.ofMember(CloseGuiPacket::encode, CloseGuiPacket::decode);
 
     public FriendlyByteBuf encode(FriendlyByteBuf buf) {
         return buf;
@@ -20,6 +20,6 @@ public record CloseGuiPacket() implements CustomPacketPayload {
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
-        return PACKET_ID;
+        return TYPE;
     }
 }

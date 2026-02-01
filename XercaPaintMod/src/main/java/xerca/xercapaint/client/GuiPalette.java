@@ -1,14 +1,14 @@
 package xerca.xercapaint.client;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.packets.PaletteUpdatePacket;
+import net.neoforged.neoforge.network.PacketDistributor;
 
-@net.fabricmc.api.Environment(net.fabricmc.api.EnvType.CLIENT)
+@net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
 public class GuiPalette extends BasePalette {
 
     protected GuiPalette(@NotNull ItemStack paletteStack, Component title) {
@@ -35,10 +35,22 @@ public class GuiPalette extends BasePalette {
 
     private void renderCursor(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (isCarryingColor) {
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256, carriedColor.rgbVal());
+            // Apply color tint using RenderSystem (NeoForge 1.21.1 doesn't support tinted blit with int color)
+            float r = ((carriedColor.rgbVal() >> 16) & 0xFF) / 255.0f;
+            float g = ((carriedColor.rgbVal() >> 8) & 0xFF) / 255.0f;
+            float b = (carriedColor.rgbVal() & 0xFF) / 255.0f;
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(r, g, b, 1.0f);
+            guiGraphics.blit(paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         } else if (isCarryingWater) {
-            guiGraphics.blit(RenderType::guiTextured, paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256, waterColor.rgbVal());
+            // Apply water color tint
+            float r = ((waterColor.rgbVal() >> 16) & 0xFF) / 255.0f;
+            float g = ((waterColor.rgbVal() >> 8) & 0xFF) / 255.0f;
+            float b = (waterColor.rgbVal() & 0xFF) / 255.0f;
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(r, g, b, 1.0f);
+            guiGraphics.blit(paletteTextures, mouseX - brushSpriteSize / 2, mouseY - brushSpriteSize / 2, brushSpriteX + brushSpriteSize, brushSpriteY, dropSpriteWidth, brushSpriteSize, 256, 256);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
     }
 
@@ -63,7 +75,7 @@ public class GuiPalette extends BasePalette {
     @Override
     public void removed() {
         if (paletteDirty) {
-            ClientPlayNetworking.send(new PaletteUpdatePacket(customColors));
+            PacketDistributor.sendToServer(new PaletteUpdatePacket(customColors));
         }
     }
 }

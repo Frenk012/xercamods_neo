@@ -1,12 +1,12 @@
 package xerca.xercamusic.common.packets.clientbound;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xerca.xercamusic.client.ClientStuff;
 import xerca.xercamusic.client.NoteSound;
 import xerca.xercamusic.common.Mod;
@@ -16,7 +16,7 @@ import xerca.xercamusic.common.item.IItemInstrument.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SingleNoteClientPacketHandler implements ClientPlayNetworking.PlayPayloadHandler<SingleNoteClientPacket> {
+public class SingleNoteClientPacketHandler {
     static final Map<Pair<Player, Integer>, NoteSoundEntry> NOTE_SOUNDS = new HashMap<>();
 
     private static void processMessage(SingleNoteClientPacket msg) {
@@ -62,10 +62,9 @@ public class SingleNoteClientPacketHandler implements ClientPlayNetworking.PlayP
         }
     }
 
-    @Override
-    public void receive(SingleNoteClientPacket packet, ClientPlayNetworking.Context context) {
+    public static void handle(SingleNoteClientPacket packet, IPayloadContext context) {
         if (packet != null) {
-            context.client().execute(() -> processMessage(packet));
+            context.enqueueWork(() -> processMessage(packet));
         }
     }
 

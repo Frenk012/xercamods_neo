@@ -30,7 +30,7 @@ public class RecipeTaglessShaped extends ShapedRecipe {
         if (super.matches(inv, worldIn)) {
             for (int j = 0; j < inv.size(); ++j) {
                 ItemStack stackInSlot = inv.getItem(j);
-                if (!stackInSlot.isEmpty() && stackInSlot.get(Items.CANVAS_PIXELS) != null) {
+                if (!stackInSlot.isEmpty() && stackInSlot.get(Items.CANVAS_PIXELS.get()) != null) {
                     return false;
                 }
             }
@@ -48,7 +48,7 @@ public class RecipeTaglessShaped extends ShapedRecipe {
         if (!result.isEmpty()) {
             for (int j = 0; j < inv.size(); ++j) {
                 ItemStack stackInSlot = inv.getItem(j);
-                if (!stackInSlot.isEmpty() && stackInSlot.get(Items.CANVAS_PIXELS) != null) {
+                if (!stackInSlot.isEmpty() && stackInSlot.get(Items.CANVAS_PIXELS.get()) != null) {
                     return ItemStack.EMPTY;
                 }
             }
@@ -64,15 +64,23 @@ public class RecipeTaglessShaped extends ShapedRecipe {
 
     @Override
     public @NotNull RecipeSerializer<RecipeTaglessShaped> getSerializer() {
-        return CRAFTING_TAGLESS_SHAPED;
+        return CRAFTING_TAGLESS_SHAPED.get();
+    }
+
+    public String getGroup() {
+        return super.getGroup();
+    }
+
+    public ItemStack getResult() {
+        return this.result;
     }
 
     public static class TaglessSerializer implements RecipeSerializer<RecipeTaglessShaped> {
         public static final MapCodec<RecipeTaglessShaped> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-                        Codec.STRING.optionalFieldOf("group", "").forGetter(ShapedRecipe::group),
+                        Codec.STRING.optionalFieldOf("group", "").forGetter(RecipeTaglessShaped::getGroup),
                         CraftingBookCategory.CODEC.fieldOf("category").orElse(CraftingBookCategory.MISC).forGetter(ShapedRecipe::category),
                         ShapedRecipePattern.MAP_CODEC.forGetter(RecipeTaglessShaped::pattern),
-                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(shapedRecipe -> shapedRecipe.result),
+                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(RecipeTaglessShaped::getResult),
                         Codec.BOOL.optionalFieldOf("show_notification", true).forGetter(ShapedRecipe::showNotification))
                 .apply(instance, RecipeTaglessShaped::new));
         public static final StreamCodec<RegistryFriendlyByteBuf, RecipeTaglessShaped> STREAM_CODEC = StreamCodec.of(RecipeTaglessShaped.TaglessSerializer::toNetwork, RecipeTaglessShaped.TaglessSerializer::fromNetwork);
@@ -97,7 +105,7 @@ public class RecipeTaglessShaped extends ShapedRecipe {
         }
 
         private static void toNetwork(RegistryFriendlyByteBuf buffer, RecipeTaglessShaped recipe) {
-            buffer.writeUtf(recipe.group());
+            buffer.writeUtf(recipe.getGroup());
             buffer.writeEnum(recipe.category());
             ShapedRecipePattern.STREAM_CODEC.encode(buffer, recipe.pattern());
             ItemStack.STREAM_CODEC.encode(buffer, recipe.result);
