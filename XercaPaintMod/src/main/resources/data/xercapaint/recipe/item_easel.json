@@ -1,11 +1,13 @@
 {
     "type": "minecraft:crafting_shaped",
-    
+    "category": "misc",
     "pattern": [
         " s ",
         " s ",
         "s s"
     ],
-    "key": {"s": "minecraft:stick"},
+    "key": {
+        "s": {"item": "minecraft:stick"}
+    },
     "result": {"id": "xercapaint:item_easel"}
 }

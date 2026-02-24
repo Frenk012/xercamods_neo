@@ -1,0 +1,11 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "ppp"
+    ],
+    "key": {
+        "p": {"tag": "minecraft:planks"}
+    },
+    "result": {"id": "xercapaint:item_palette"}
+}
