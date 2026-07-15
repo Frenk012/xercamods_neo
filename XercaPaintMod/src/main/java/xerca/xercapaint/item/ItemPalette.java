@@ -81,6 +81,28 @@ public class ItemPalette extends Item {
                 tooltip.add(Component.translatable("palette.custom_count", String.valueOf(fullCount)).withStyle(ChatFormatting.GRAY));
             }
         }
+
+        // Feature 1: show remaining per-colour paint charge when dye cost is enabled.
+        if (xerca.xercapaint.Config.dyeCostEnabled()) {
+            Items.BasicColors unlocked = stack.get(Items.PALETTE_BASIC_COLORS.get());
+            Items.PaletteCharges charges = stack.getOrDefault(Items.PALETTE_CHARGES.get(), Items.PaletteCharges.empty());
+            if (unlocked == null) {
+                tooltip.add(Component.translatable("palette.charge.empty").withStyle(ChatFormatting.DARK_GRAY));
+            } else {
+                tooltip.add(Component.translatable("palette.charge.header").withStyle(ChatFormatting.GRAY));
+                for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+                    if (unlocked.get(i) <= 0) {
+                        continue;
+                    }
+                    int swatch = xerca.xercapaint.PaletteUtil.BASIC_COLORS[i].rgbVal() & 0xFFFFFF;
+                    int value = charges.get(i);
+                    Component line = Component.literal("█ ").withStyle(s -> s.withColor(swatch))
+                            .append(Component.literal(String.valueOf(value))
+                                    .withStyle(value > 0 ? ChatFormatting.WHITE : ChatFormatting.RED));
+                    tooltip.add(line);
+                }
+            }
+        }
     }
 
     public static class ComponentCustomColor {

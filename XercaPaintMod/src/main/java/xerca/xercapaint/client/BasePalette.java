@@ -47,24 +47,8 @@ public abstract class BasePalette extends Screen {
     double paletteY;
     final static PaletteUtil.Color waterColor = new PaletteUtil.Color(53, 118, 191);
 
-    final static PaletteUtil.Color[] basicColors = {
-            new PaletteUtil.Color(0xFF1D1D21),
-            new PaletteUtil.Color(0xFFB02E26),
-            new PaletteUtil.Color(0xFF5E7C16),
-            new PaletteUtil.Color(0xFF835432),
-            new PaletteUtil.Color(0xFF3C44AA),
-            new PaletteUtil.Color(0xFF8932B8),
-            new PaletteUtil.Color(0xFF169C9C),
-            new PaletteUtil.Color(0xFF9D9D97),
-            new PaletteUtil.Color(0xFF474F52),
-            new PaletteUtil.Color(0xFFF38BAA),
-            new PaletteUtil.Color(0xFF80C71F),
-            new PaletteUtil.Color(0xFFFED83D),
-            new PaletteUtil.Color(0xFF3AB3DA),
-            new PaletteUtil.Color(0xFFC74EBD),
-            new PaletteUtil.Color(0xFFF9801D),
-            new PaletteUtil.Color(0xFFF9FFFE)
-    };
+    // Shared with the server for charge accounting; see PaletteUtil.BASIC_COLORS.
+    final static PaletteUtil.Color[] basicColors = PaletteUtil.BASIC_COLORS;
     final static Vec2[] basicColorCenters = {
             new Vec2(23.5f, 172.5f),
             new Vec2(18.5f, 145.5f),

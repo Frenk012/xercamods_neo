@@ -5,6 +5,101 @@ import net.minecraft.network.FriendlyByteBuf;
 public class PaletteUtil {
     public static final Color EMPTINESS_COLOR = new Color(255, 236, 229);
 
+    /** The 16 basic palette colors, indexed 0..15. Shared source of truth for client rendering and server charge accounting. */
+    public static final Color[] BASIC_COLORS = {
+            new Color(0xFF1D1D21),
+            new Color(0xFFB02E26),
+            new Color(0xFF5E7C16),
+            new Color(0xFF835432),
+            new Color(0xFF3C44AA),
+            new Color(0xFF8932B8),
+            new Color(0xFF169C9C),
+            new Color(0xFF9D9D97),
+            new Color(0xFF474F52),
+            new Color(0xFFF38BAA),
+            new Color(0xFF80C71F),
+            new Color(0xFFFED83D),
+            new Color(0xFF3AB3DA),
+            new Color(0xFFC74EBD),
+            new Color(0xFFF9801D),
+            new Color(0xFFF9FFFE)
+    };
+
+    private static double dist2(Color c, double r, double g, double b) {
+        double dr = c.r - r;
+        double dg = c.g - g;
+        double db = c.b - b;
+        return dr * dr + dg * dg + db * db;
+    }
+
+    /**
+     * Feature 1 (per-color charge): estimate which basic colors compose a painted pixel colour.
+     * <p>
+     * Custom colours are stored only as an averaged RGB, so the exact dyes used are unknown. This greedily
+     * reconstructs the mix: it repeatedly adds the available basic colour that brings the running average
+     * closest to the target, mirroring how custom colours are actually mixed by averaging dyes.
+     *
+     * @param rgb       the pixel colour (ARGB or RGB; alpha ignored)
+     * @param available which of the 16 basic colours are unlocked on the palette
+     * @return per-basic-colour unit counts estimating the composition (sums to &ge;1 when any colour is available)
+     */
+    public static int[] estimateComposition(int rgb, boolean[] available) {
+        final int cap = 8;
+        Color target = new Color(rgb & 0xFFFFFF);
+        int[] counts = new int[16];
+        long sr = 0, sg = 0, sb = 0;
+        int n = 0;
+        double bestErr = Double.MAX_VALUE;
+
+        for (int step = 0; step < cap; step++) {
+            int bestI = -1;
+            double bestStepErr = bestErr;
+            for (int i = 0; i < 16; i++) {
+                if (!available[i]) {
+                    continue;
+                }
+                Color bc = BASIC_COLORS[i];
+                double err = dist2(target,
+                        (double) (sr + bc.r) / (n + 1),
+                        (double) (sg + bc.g) / (n + 1),
+                        (double) (sb + bc.b) / (n + 1));
+                if (err < bestStepErr) {
+                    bestStepErr = err;
+                    bestI = i;
+                }
+            }
+            if (bestI < 0) {
+                break; // adding any colour only makes it worse
+            }
+            counts[bestI]++;
+            sr += BASIC_COLORS[bestI].r;
+            sg += BASIC_COLORS[bestI].g;
+            sb += BASIC_COLORS[bestI].b;
+            n++;
+            bestErr = bestStepErr;
+        }
+
+        if (n == 0) {
+            // Nothing improved from empty (or nothing unlocked); fall back to the single nearest available colour.
+            int nearest = -1;
+            double nearestErr = Double.MAX_VALUE;
+            for (int i = 0; i < 16; i++) {
+                if (!available[i]) {
+                    continue;
+                }
+                double err = dist2(target, BASIC_COLORS[i].r, BASIC_COLORS[i].g, BASIC_COLORS[i].b);
+                if (err < nearestErr) {
+                    nearestErr = err;
+                    nearest = i;
+                }
+            }
+            if (nearest >= 0) {
+                counts[nearest] = 1;
+            }
+        }
+        return counts;
+    }
+
     public static class Color {
         public static final Color WHITE = new Color(0xFFFFFFFF);
 

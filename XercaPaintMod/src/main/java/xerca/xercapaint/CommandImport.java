@@ -22,6 +22,8 @@ public class CommandImport {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("paintimport")
+                        .requires(source -> Config.importEnabled()
+                                && (!Config.importRequiresOp() || source.hasPermission(Config.importOpLevel())))
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .executes((p) -> paintImport(p.getSource(), StringArgumentType.getString(p, "name"))))
         );

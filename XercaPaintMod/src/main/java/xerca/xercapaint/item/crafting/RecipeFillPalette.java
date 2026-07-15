@@ -94,18 +94,35 @@ public class RecipeFillPalette extends CustomRecipe {
         Items.BasicColors inputColors = inputPalette.getOrDefault(Items.PALETTE_BASIC_COLORS.get(), Items.BasicColors.empty());
         byte[] basicColors = inputColors.colors().clone();
 
+        boolean dyeCost = xerca.xercapaint.Config.dyeCostEnabled();
+        int maxCharge = xerca.xercapaint.Config.maxCharge();
+        int perDye = xerca.xercapaint.Config.chargePerDye();
+
+        // Feature 1: per-colour charge. A dye refills only its own colour.
+        Items.PaletteCharges inputCharges = inputPalette.getOrDefault(Items.PALETTE_CHARGES.get(), Items.PaletteCharges.empty());
+        int[] charges = inputCharges.charges().clone();
+
         for (ItemStack dye : dyes) {
             DyeColor color = ((DyeItem) (dye.getItem())).getDyeColor();
             int realColorId = 15 - color.getId();
-            if (basicColors[realColorId] > 0) {
+            if (basicColors[realColorId] > 0 && !dyeCost) {
+                // Vanilla behaviour: without dye cost a duplicate dye is pointless, so the recipe yields nothing.
                 Mod.LOGGER.debug("Color already exists in palette.");
                 return ItemStack.EMPTY;
             }
             basicColors[realColorId] = 1;
+            if (dyeCost) {
+                charges[realColorId] = Math.min(maxCharge, charges[realColorId] + perDye);
+            }
         }
 
-        ItemStack result = new ItemStack(Items.ITEM_PALETTE.get());
+        // Preserve the input palette's other data (custom colors, existing charges).
+        ItemStack result = inputPalette.copy();
+        result.setCount(1);
         result.set(Items.PALETTE_BASIC_COLORS.get(), new Items.BasicColors(basicColors));
+        if (dyeCost) {
+            result.set(Items.PALETTE_CHARGES.get(), new Items.PaletteCharges(charges));
+        }
         return result;
     }
 

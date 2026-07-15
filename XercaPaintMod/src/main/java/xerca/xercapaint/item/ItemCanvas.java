@@ -180,6 +180,10 @@ public class ItemCanvas extends Item {
             if (generation > 0) {
                 tooltipComponents.add((Component.translatable("canvas.generation." + (generation - 1))).withStyle(ChatFormatting.GRAY));
             }
+            // Feature 10: mark protected (waxed) paintings.
+            if (stack.getOrDefault(Items.CANVAS_WAXED.get(), false)) {
+                tooltipComponents.add(Component.translatable("canvas.waxed").withStyle(ChatFormatting.GOLD));
+            }
         } else {
             tooltipComponents.add(Component.translatable("canvas.empty").withStyle(ChatFormatting.GRAY));
         }

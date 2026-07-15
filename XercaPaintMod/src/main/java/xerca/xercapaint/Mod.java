@@ -38,12 +38,17 @@ public class Mod {
         BlockEntities.BLOCK_ENTITIES.register(modEventBus);
         Entities.ENTITY_TYPES.register(modEventBus);
         SoundEvents.SOUND_EVENTS.register(modEventBus);
+        xerca.xercapaint.loot.ModLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
+
+        // Register server config
+        modContainer.registerConfig(net.neoforged.fml.config.ModConfig.Type.SERVER, Config.SPEC);
 
         // Register mod event handlers
         modEventBus.addListener(this::onRegisterPayloads);
 
         // Register game event handlers
         NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(TradeEvents.class);
     }
 
     private void onRegisterPayloads(RegisterPayloadHandlersEvent event) {

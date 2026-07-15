@@ -1,0 +1,39 @@
+{
+    "parent": "xercapaint:root",
+    "display": {
+        "icon": {
+            "id": "xercapaint:item_canvas"
+        },
+        "title": {
+            "translate": "advancements.xercapaint.canvas.title"
+        },
+        "description": {
+            "translate": "advancements.xercapaint.canvas.description"
+        },
+        "show_toast": true,
+        "announce_to_chat": false,
+        "hidden": false
+    },
+    "criteria": {
+        "has_canvas": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "items": [
+                            "xercapaint:item_canvas",
+                            "xercapaint:item_canvas_large",
+                            "xercapaint:item_canvas_long",
+                            "xercapaint:item_canvas_tall"
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "requirements": [
+        [
+            "has_canvas"
+        ]
+    ]
+}

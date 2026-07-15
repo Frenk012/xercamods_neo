@@ -22,6 +22,7 @@ import xerca.xercapaint.item.crafting.RecipeCanvasCloning;
 import xerca.xercapaint.item.crafting.RecipeCraftPalette;
 import xerca.xercapaint.item.crafting.RecipeFillPalette;
 import xerca.xercapaint.item.crafting.RecipeTaglessShaped;
+import xerca.xercapaint.item.crafting.RecipeWaxCanvas;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -71,6 +72,12 @@ public final class Items {
             () -> DataComponentType.<BasicColors>builder().persistent(BasicColors.CODEC).networkSynchronized(BasicColors.STREAM_CODEC).build());
     public static final Supplier<DataComponentType<ItemPalette.ComponentCustomColor>> PALETTE_CUSTOM_COLORS = DATA_COMPONENT_TYPES.register("palette_custom_colors",
             () -> DataComponentType.<ItemPalette.ComponentCustomColor>builder().persistent(ItemPalette.ComponentCustomColor.CODEC).build());
+    // Feature 1: per-basic-colour paint charge stored in the palette (consumed while painting when dye cost is enabled).
+    public static final Supplier<DataComponentType<PaletteCharges>> PALETTE_CHARGES = DATA_COMPONENT_TYPES.register("palette_charges",
+            () -> DataComponentType.<PaletteCharges>builder().persistent(PaletteCharges.CODEC).networkSynchronized(PaletteCharges.STREAM_CODEC).build());
+    // Feature 10: waxed (protected) canvas can no longer be edited.
+    public static final Supplier<DataComponentType<Boolean>> CANVAS_WAXED = DATA_COMPONENT_TYPES.register("canvas_waxed",
+            () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
 
     // Recipe Serializers
     public static final Supplier<RecipeSerializer<RecipeCraftPalette>> CRAFTING_SPECIAL_PALETTE_CRAFTING =
@@ -84,6 +91,9 @@ public final class Items {
                     () -> new SimpleCraftingRecipeSerializer<>(RecipeCanvasCloning::new));
     public static final Supplier<RecipeSerializer<RecipeTaglessShaped>> CRAFTING_TAGLESS_SHAPED =
             RECIPE_SERIALIZERS.register("crafting_tagless_shaped", RecipeTaglessShaped.TaglessSerializer::new);
+    public static final Supplier<RecipeSerializer<RecipeWaxCanvas>> CRAFTING_SPECIAL_WAX_CANVAS =
+            RECIPE_SERIALIZERS.register("crafting_special_wax_canvas",
+                    () -> new SimpleCraftingRecipeSerializer<>(RecipeWaxCanvas::new));
 
     // Creative Mode Tab
     public static final Supplier<CreativeModeTab> PAINT_TAB = CREATIVE_MODE_TABS.register("paint_tab",
@@ -92,6 +102,7 @@ public final class Items {
                     .displayItems((params, output) -> {
                         ItemStack fullPalette = new ItemStack(ITEM_PALETTE.get());
                         fullPalette.set(PALETTE_BASIC_COLORS.get(), BasicColors.full());
+                        fullPalette.set(PALETTE_CHARGES.get(), PaletteCharges.filled(xerca.xercapaint.Config.maxCharge()));
 
                         output.accept(ITEM_PALETTE.get());
                         output.accept(fullPalette);
@@ -103,6 +114,94 @@ public final class Items {
                     })
                     .title(Component.translatable("itemGroup.xercapaint.paint_tab"))
                     .build());
+
+    /**
+     * Feature 1: per-basic-colour paint charge (16 values). Each basic colour is refilled only by its own dye,
+     * and painting consumes the colours estimated to compose each pixel.
+     */
+    public record PaletteCharges(int[] charges) {
+        public static final int SIZE = 16;
+
+        public static final Codec<PaletteCharges> CODEC = Codec.INT.listOf().xmap(
+                list -> {
+                    int[] arr = new int[SIZE];
+                    for (int i = 0; i < SIZE && i < list.size(); i++) {
+                        arr[i] = list.get(i);
+                    }
+                    return new PaletteCharges(arr);
+                },
+                pc -> {
+                    List<Integer> list = new java.util.ArrayList<>(SIZE);
+                    for (int v : pc.charges) {
+                        list.add(v);
+                    }
+                    return list;
+                }
+        );
+
+        public static final StreamCodec<ByteBuf, PaletteCharges> STREAM_CODEC = new StreamCodec<>() {
+            @Override
+            public PaletteCharges decode(ByteBuf buf) {
+                int[] arr = new int[SIZE];
+                for (int i = 0; i < SIZE; i++) {
+                    arr[i] = buf.readInt();
+                }
+                return new PaletteCharges(arr);
+            }
+
+            @Override
+            public void encode(ByteBuf buf, PaletteCharges value) {
+                for (int i = 0; i < SIZE; i++) {
+                    buf.writeInt(value.charges[i]);
+                }
+            }
+        };
+
+        public PaletteCharges {
+            if (charges.length != SIZE) {
+                throw new IllegalArgumentException("PaletteCharges must have exactly " + SIZE + " elements, got " + charges.length);
+            }
+        }
+
+        public static PaletteCharges empty() {
+            return new PaletteCharges(new int[SIZE]);
+        }
+
+        public static PaletteCharges filled(int value) {
+            int[] arr = new int[SIZE];
+            Arrays.fill(arr, value);
+            return new PaletteCharges(arr);
+        }
+
+        public int get(int index) {
+            return charges[index];
+        }
+
+        public int total() {
+            int sum = 0;
+            for (int c : charges) {
+                sum += c;
+            }
+            return sum;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            return Arrays.equals(charges, ((PaletteCharges) o).charges);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(charges);
+        }
+
+        @Override
+        public String toString() {
+            return "PaletteCharges" + Arrays.toString(charges);
+        }
+    }
 
     /**
      * Wrapper record for byte[] that implements equals and hashCode correctly.

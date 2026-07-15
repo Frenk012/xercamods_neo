@@ -1,0 +1,14 @@
+{
+    "type": "xercapaint:add_item",
+    "conditions": [
+        {
+            "condition": "neoforge:loot_table_id",
+            "loot_table_id": "minecraft:chests/village/village_cartographer"
+        },
+        {
+            "condition": "minecraft:random_chance",
+            "chance": 0.25
+        }
+    ],
+    "item": "xercapaint:item_easel"
+}

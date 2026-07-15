@@ -1,0 +1,8 @@
+{
+    "replace": false,
+    "entries": [
+        "xercapaint:cartographer_palette",
+        "xercapaint:cartographer_easel",
+        "xercapaint:mansion_painting"
+    ]
+}

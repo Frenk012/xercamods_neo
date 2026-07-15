@@ -34,5 +34,18 @@
   "easel.deny": "Someone else is working on this painting right now",
 
   "entity.xercapaint.canvas": "Canvas",
-  "entity.xercapaint.easel": "Easel"
+  "entity.xercapaint.easel": "Easel",
+
+  "palette.charge.header": "Paint left:",
+  "palette.charge.empty": "No colors mixed yet",
+  "canvas.waxed": "Protected",
+  "xercapaint.protected": "This painting is protected and cannot be edited",
+  "xercapaint.out_of_paint": "Your palette is out of paint - refill it with dyes",
+
+  "advancements.xercapaint.root.title": "The Artist's Way",
+  "advancements.xercapaint.root.description": "Craft a painter's palette",
+  "advancements.xercapaint.canvas.title": "Blank Canvas",
+  "advancements.xercapaint.canvas.description": "Get a canvas to paint on",
+  "advancements.xercapaint.easel.title": "At the Easel",
+  "advancements.xercapaint.easel.description": "Set up an easel to paint in comfort"
 }

@@ -1,0 +1,34 @@
+{
+    "parent": "xercapaint:canvas",
+    "display": {
+        "icon": {
+            "id": "xercapaint:item_easel"
+        },
+        "title": {
+            "translate": "advancements.xercapaint.easel.title"
+        },
+        "description": {
+            "translate": "advancements.xercapaint.easel.description"
+        },
+        "show_toast": true,
+        "announce_to_chat": false,
+        "hidden": false
+    },
+    "criteria": {
+        "has_easel": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "items": "xercapaint:item_easel"
+                    }
+                ]
+            }
+        }
+    },
+    "requirements": [
+        [
+            "has_easel"
+        ]
+    ]
+}

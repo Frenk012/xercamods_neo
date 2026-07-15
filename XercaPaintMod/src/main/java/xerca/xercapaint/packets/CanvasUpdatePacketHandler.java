@@ -1,6 +1,10 @@
 package xerca.xercapaint.packets;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import xerca.xercapaint.Config;
+import xerca.xercapaint.PaletteUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -55,6 +59,27 @@ public class CanvasUpdatePacketHandler {
         }
 
         if (!canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
+            // Feature 10: a waxed (protected) canvas can no longer be edited.
+            if (canvas.getOrDefault(Items.CANVAS_WAXED.get(), false)) {
+                pl.displayClientMessage(Component.translatable("xercapaint.protected").withStyle(ChatFormatting.RED), true);
+                return;
+            }
+
+            boolean paletteIsReal = !palette.isEmpty() && palette.getItem() == Items.ITEM_PALETTE.get();
+
+            // Feature 1: consume per-colour paint charge from the palette based on which pixels changed.
+            if (Config.dyeCostEnabled() && paletteIsReal && !pl.isCreative()) {
+                Items.PaletteCharges charges = palette.getOrDefault(Items.PALETTE_CHARGES.get(), Items.PaletteCharges.empty());
+                if (charges.total() <= 0) {
+                    pl.displayClientMessage(Component.translatable("xercapaint.out_of_paint").withStyle(ChatFormatting.RED), true);
+                    return;
+                }
+                int[] newCharges = consumeCharges(charges.charges(),
+                        canvas.get(Items.CANVAS_PIXELS.get()), msg.pixels(),
+                        palette.getOrDefault(Items.PALETTE_BASIC_COLORS.get(), Items.BasicColors.empty()));
+                palette.set(Items.PALETTE_CHARGES.get(), new Items.PaletteCharges(newCharges));
+            }
+
             canvas.set(Items.CANVAS_PIXELS.get(), Arrays.stream(msg.pixels()).boxed().toList());
             canvas.set(Items.CANVAS_ID.get(), msg.canvasId());
             canvas.set(Items.CANVAS_VERSION.get(), msg.version());
@@ -76,6 +101,57 @@ public class CanvasUpdatePacketHandler {
 
             Mod.LOGGER.debug("Handling canvas update: Name: {} V: {}", msg.canvasId(), msg.version());
         }
+    }
+
+    /**
+     * Consumes per-colour charge for every pixel that changed. For each changed, non-transparent pixel we estimate
+     * which basic colours compose its colour (see {@link PaletteUtil#estimateComposition}) and spread one unit of
+     * cost across those colours proportionally. Fractional consumption is accumulated and applied once at the end.
+     */
+    private static int[] consumeCharges(int[] charges, java.util.List<Integer> oldPixels, int[] newPixels,
+                                        Items.BasicColors basic) {
+        boolean[] available = new boolean[16];
+        for (int i = 0; i < 16; i++) {
+            available[i] = basic.get(i) > 0;
+        }
+
+        double[] acc = new double[16];
+        // Cache composition per distinct colour so a big single-colour fill isn't re-estimated thousands of times.
+        java.util.HashMap<Integer, int[]> cache = new java.util.HashMap<>();
+
+        boolean hadOld = oldPixels != null && !oldPixels.isEmpty();
+        for (int i = 0; i < newPixels.length; i++) {
+            int now = newPixels[i];
+            if ((now >>> 24) == 0) {
+                continue; // transparent pixel: erased or blank, no paint used
+            }
+            int old = hadOld && i < oldPixels.size() ? oldPixels.get(i) : 0;
+            if (now == old) {
+                continue; // unchanged pixel costs nothing
+            }
+            int[] counts = cache.computeIfAbsent(now & 0xFFFFFF, rgb -> PaletteUtil.estimateComposition(rgb, available));
+            int totalUnits = 0;
+            for (int c : counts) {
+                totalUnits += c;
+            }
+            if (totalUnits == 0) {
+                continue;
+            }
+            for (int c = 0; c < 16; c++) {
+                if (counts[c] > 0) {
+                    acc[c] += (double) counts[c] / totalUnits;
+                }
+            }
+        }
+
+        int[] result = charges.clone();
+        for (int c = 0; c < 16; c++) {
+            int cost = (int) Math.round(acc[c]);
+            if (cost > 0) {
+                result[c] = Math.max(0, result[c] - cost);
+            }
+        }
+        return result;
     }
 
     public static void handle(CanvasUpdatePacket packet, IPayloadContext context) {
