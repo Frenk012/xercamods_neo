@@ -1,7 +1,6 @@
 package xerca.xercapaint.client;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -11,8 +10,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
 public class GuiPalette extends BasePalette {
 
-    protected GuiPalette(@NotNull ItemStack paletteStack, Component title) {
-        super(title, paletteStack);
+    protected GuiPalette(@NotNull ItemStack paletteStack, Component title, boolean useDyeCosts) {
+        super(title, paletteStack, useDyeCosts);
     }
 
     @Override

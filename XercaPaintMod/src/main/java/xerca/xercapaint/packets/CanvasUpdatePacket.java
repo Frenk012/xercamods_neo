@@ -7,10 +7,11 @@ import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.PaletteUtil;
+import xerca.xercapaint.item.Items;
 
 public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, String canvasId, int version, int easelId,
                                  PaletteUtil.CustomColor[] paletteColors,
-                                 CanvasType canvasType) implements CustomPacketPayload {
+                                 CanvasType canvasType, int[] basicColorsCharges) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CanvasUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("canvas_update"));
     public static final StreamCodec<FriendlyByteBuf, CanvasUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(CanvasUpdatePacket::encode, CanvasUpdatePacket::decode);
 
@@ -25,6 +26,7 @@ public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, Str
         buf.writeUtf(title);
         buf.writeBoolean(signed);
         buf.writeVarIntArray(pixels);
+        buf.writeVarIntArray(basicColorsCharges);
         return buf;
     }
 
@@ -42,7 +44,8 @@ public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, Str
         boolean signed = buf.readBoolean();
         int area = CanvasType.getHeight(canvasType) * CanvasType.getWidth(canvasType);
         int[] pixels = buf.readVarIntArray(area);
-        return new CanvasUpdatePacket(pixels, signed, title, canvasId, version, easelId, paletteColors, canvasType);
+        int[] basicColorsCharges = buf.readVarIntArray(Items.BasicColors.SIZE);
+        return new CanvasUpdatePacket(pixels, signed, title, canvasId, version, easelId, paletteColors, canvasType, basicColorsCharges);
     }
 
     @Override

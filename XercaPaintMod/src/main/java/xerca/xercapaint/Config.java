@@ -22,6 +22,8 @@ public final class Config {
     // Feature 3: villager trades
     public static final ModConfigSpec.BooleanValue VILLAGER_TRADES_ENABLED;
 
+    public static final ModConfigSpec.BooleanValue ALLOW_ERASE;
+
     private Config() {
     }
 
@@ -35,7 +37,7 @@ public final class Config {
     }
 
     public static int maxCharge() {
-        return SPEC.isLoaded() ? MAX_CHARGE.get() : 4096;
+        return SPEC.isLoaded() ? MAX_CHARGE.get() : 1024;
     }
 
     public static boolean importEnabled() {
@@ -66,7 +68,7 @@ public final class Config {
                 .defineInRange("chargePerDye", 256, 1, 1_000_000);
         MAX_CHARGE = builder
                 .comment("Maximum paint charge a palette can hold PER basic colour.")
-                .defineInRange("maxCharge", 4096, 1, 1_000_000);
+                .defineInRange("maxCharge", 1024, 1, 1_000_000);
         builder.pop();
 
         builder.push("import");
@@ -85,6 +87,12 @@ public final class Config {
         VILLAGER_TRADES_ENABLED = builder
                 .comment("If true, adds cartographer and wandering trader trades for canvases and paintings.")
                 .define("villagerTradesEnabled", true);
+        builder.pop();
+
+        builder.push("editor");
+        ALLOW_ERASE = builder
+                .comment("Allow erasing parts of the canvas with right click.")
+                .define("allowErase", true);
         builder.pop();
 
         SPEC = builder.build();

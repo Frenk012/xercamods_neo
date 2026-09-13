@@ -16,6 +16,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+import xerca.xercapaint.Config;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.block_entity.BlockEntities;
 import xerca.xercapaint.entity.Entities;
@@ -65,7 +66,7 @@ public class ModClient {
             }
         } else if (heldItem.getItem() instanceof ItemPalette) {
             if (offhandItem.isEmpty() || !(offhandItem.getItem() instanceof ItemCanvas)) {
-                minecraft.setScreen(new GuiPalette(heldItem, Component.translatable("item.xercapaint.item_palette")));
+                minecraft.setScreen(new GuiPalette(heldItem, Component.translatable("item.xercapaint.item_palette"), Config.dyeCostEnabled() && !player.isCreative()));
             } else {
                 if (offhandItem.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0) {
                     minecraft.setScreen(new GuiCanvasView(offhandItem, Component.translatable("item.xercapaint.item_canvas"), ((ItemCanvas) offhandItem.getItem()).getCanvasType(), null));

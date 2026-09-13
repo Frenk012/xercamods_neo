@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.network.chat.Component;
@@ -14,13 +13,16 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec2;
 import org.jetbrains.annotations.NotNull;
+import xerca.xercapaint.Config;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.PaletteUtil;
 import xerca.xercapaint.SoundEvents;
 import xerca.xercapaint.item.ItemPalette;
 import xerca.xercapaint.item.Items;
 
-import static xerca.xercapaint.PaletteUtil.EMPTINESS_COLOR;
+import javax.annotation.Nullable;
+
+import static xerca.xercapaint.PaletteUtil.BASIC_COLORS;
 
 public abstract class BasePalette extends Screen {
     protected static final ResourceLocation paletteTextures = Mod.id("textures/gui/palette.png");
@@ -45,7 +47,8 @@ public abstract class BasePalette extends Screen {
     static final double[] paletteYs = {-1000, -1000, -1000, -1000, -1000};
     double paletteX;
     double paletteY;
-    final static PaletteUtil.Color waterColor = new PaletteUtil.Color(53, 118, 191);
+    protected static final PaletteUtil.Color waterColor = new PaletteUtil.Color(53, 118, 191);
+    private static final PaletteUtil.Color EMPTY_BRUSH_COLOR = new PaletteUtil.Color(206, 167, 140);
 
     // Shared with the server for charge accounting; see PaletteUtil.BASIC_COLORS.
     final static PaletteUtil.Color[] basicColors = PaletteUtil.BASIC_COLORS;
@@ -92,32 +95,136 @@ public abstract class BasePalette extends Screen {
     boolean paletteDirty = false;
     PaletteUtil.Color carriedColor;
     int carriedCustomColorId = -1;
-    static PaletteUtil.Color currentColor = basicColors[0];
-    final PaletteUtil.CustomColor[] customColors;
-    final boolean[] basicColorFlags;
+    @Nullable
+    protected static PaletteUtil.Color currentColor = null;
+    final PaletteUtil.CustomColor[] customColors = new PaletteUtil.CustomColor[12];
+    final boolean[] basicColorFlags = new boolean[16];
+    final int[] basicColorChargesPermille = new int[16];
+    final boolean useDyeCosts;
     boolean paletteComplete = false;
     boolean isCarryingPalette = false;
 
-    BasePalette(Component titleIn, ItemStack paletteStack) {
+
+    BasePalette(Component titleIn, ItemStack paletteStack, boolean useDyeCosts) {
         super(titleIn);
-        this.basicColorFlags = new boolean[16];
+        this.useDyeCosts = useDyeCosts;
 
-        ItemPalette.ComponentCustomColor componentCustomColor = paletteStack.get(Items.PALETTE_CUSTOM_COLORS.get());
-        if (componentCustomColor != null) {
-            this.customColors = componentCustomColor.colors;
-        } else {
-            this.customColors = new PaletteUtil.CustomColor[12];
-            for (int i = 0; i < customColors.length; i++) {
-                customColors[i] = new PaletteUtil.CustomColor();
-            }
-        }
+        populateBasicColorsAndCharges(paletteStack);
+        populateCustomColors(paletteStack);
 
+        currentColor = null;
+
+        removeImpossibleCustomColors();
+    }
+
+    private void populateBasicColorsAndCharges(ItemStack paletteStack) {
         Items.BasicColors basics = paletteStack.get(Items.PALETTE_BASIC_COLORS.get());
+        Items.PaletteCharges charges = paletteStack.getOrDefault(Items.PALETTE_CHARGES.get(), Items.PaletteCharges.empty());
         if (basics != null) {
             paletteComplete = true;
             for (int i = 0; i < Items.BasicColors.SIZE; i++) {
-                basicColorFlags[i] = basics.get(i) > 0;
+                basicColorFlags[i] = basics.get(i) > 0 && (!useDyeCosts || charges.get(i) > 0);
+                basicColorChargesPermille[i] = charges.get(i) * 1000;
                 paletteComplete &= basicColorFlags[i];
+            }
+        }
+    }
+
+    private void populateCustomColors(ItemStack paletteStack) {
+        ItemPalette.ComponentCustomColor componentCustomColor = paletteStack.get(Items.PALETTE_CUSTOM_COLORS.get());
+
+        for (int i = 0; i < customColors.length; i++) {
+            if (componentCustomColor != null) {
+                customColors[i] = componentCustomColor.colors[i];
+            } else {
+                customColors[i] = new PaletteUtil.CustomColor();
+            }
+        }
+    }
+
+    protected int[] getBasicColorCharges() {
+        int[] basicColorCharges = new int[BASIC_COLORS.length];
+        for (int i = 0; i < BASIC_COLORS.length; i++) {
+            basicColorCharges[i] = (int) Math.ceil(basicColorChargesPermille[i] / 1000.);
+        }
+        return basicColorCharges;
+    }
+
+    protected void useDyeCharge(float dyeCostModifier) {
+        if (!useDyeCosts && hasSelectedColor()) {
+            return;
+        }
+
+        if (isBasicColor()) {
+            consumeColorChargesForBasicColors(dyeCostModifier);
+        } else {
+            consumeColorChargesForCustomColors(dyeCostModifier);
+        }
+
+        updateAvailableColors();
+        removeImpossibleCustomColors();
+    }
+
+    private boolean isBasicColor() {
+        for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+            if (currentColor == basicColors[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void consumeColorChargesForBasicColors(float dyeCostModifier) {
+        for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+            if (currentColor == basicColors[i]) {
+                basicColorChargesPermille[i] -= Math.round(1000 * dyeCostModifier);
+            }
+        }
+    }
+
+    private void consumeColorChargesForCustomColors(float dyeCostModifier) {
+        int[] basicColorsInCustomColor = PaletteUtil.estimateCompositionCache(currentColor.rgbVal(), basicColorFlags);
+        int totalUnits = 0;
+        for (int c : basicColorsInCustomColor) {
+            totalUnits += c;
+        }
+
+        for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+            if (basicColorsInCustomColor[i] > 0) {
+                basicColorChargesPermille[i] -= (int) Math.round(1000 * dyeCostModifier * ((double) basicColorsInCustomColor[i] / totalUnits));
+            }
+        }
+    }
+
+    private void removeImpossibleCustomColors() {
+        for (int i = 0; i < customColors.length; i++) {
+            if (!isCustomColorPossible(customColors[i].getColor())) {
+                if (customColors[i].getColor() == currentColor) {
+                    currentColor = null;
+                }
+                customColors[i] = new PaletteUtil.CustomColor();
+            }
+        }
+    }
+
+    private boolean isCustomColorPossible(PaletteUtil.Color color) {
+        int[] basicColorsInCustomColor = PaletteUtil.estimateCompositionCache(color.rgbVal(), basicColorFlags);
+        for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+            if (basicColorsInCustomColor[i] > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected void updateAvailableColors() {
+        for (int i = 0; i < Items.BasicColors.SIZE; i++) {
+            basicColorFlags[i] = basicColorChargesPermille[i] > 0;
+            paletteComplete &= basicColorFlags[i];
+
+            if (currentColor == basicColors[i] && !basicColorFlags[i]) {
+                currentColor = null;
+                return;
             }
         }
     }
@@ -137,12 +244,18 @@ public abstract class BasePalette extends Screen {
             int x = (int) paletteX + (int) basicColorCenters[i].x;
             int y = (int) paletteY + (int) basicColorCenters[i].y;
             int r = (int) basicColorRadius;
-            if (basicColorFlags[i]) {
-                guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, basicColors[i].rgbVal());
 
+            guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, new PaletteUtil.Color(235, 186, 139).rgbVal());
+
+            int r2 = r;
+            if (useDyeCosts) {
+                r2 = (int) Math.ceil(basicColorRadius * ((float) getBasicColorCharges()[i] / ((float) Config.maxCharge() / 2) - 1));
+            }
+
+            guiGraphics.fill(x - r, y - r, x + r2 + 1, y + r + 1, basicColors[i].rgbVal());
+
+            if (basicColorFlags[i]) {
                 guiGraphics.blit(paletteTextures, x - 8, y - 8, dyeSpriteX, i * dyeSpriteSize, dyeSpriteSize, dyeSpriteSize, 256, 256);
-            } else {
-                guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, EMPTINESS_COLOR.rgbVal());
             }
         }
 
@@ -249,6 +362,17 @@ public abstract class BasePalette extends Screen {
 
     protected boolean inWater(int x, int y) {
         return sqrDist(new Vec2(x, y), waterCenter) <= customColorRadius * customColorRadius;
+    }
+
+    protected boolean hasSelectedColor() {
+        return currentColor != null;
+    }
+
+    protected PaletteUtil.Color getCurrentOrEmptyBrushColor() {
+        if (hasSelectedColor()) {
+            return currentColor;
+        }
+        return EMPTY_BRUSH_COLOR;
     }
 
     @Override
