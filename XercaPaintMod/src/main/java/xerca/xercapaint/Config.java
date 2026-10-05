@@ -40,6 +40,10 @@ public final class Config {
         return SPEC.isLoaded() ? MAX_CHARGE.get() : 1024;
     }
 
+    public static boolean allowErase() {
+        return !SPEC.isLoaded() || ALLOW_ERASE.get();
+    }
+
     public static boolean importEnabled() {
         return !SPEC.isLoaded() || IMPORT_ENABLED.get();
     }

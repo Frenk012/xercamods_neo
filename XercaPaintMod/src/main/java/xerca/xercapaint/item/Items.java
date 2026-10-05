@@ -52,11 +52,24 @@ public final class Items {
             () -> new ItemCanvas(CanvasType.LONG, "item_canvas_long"));
     public static final DeferredItem<ItemCanvas> ITEM_CANVAS_TALL = ITEMS.register("item_canvas_tall",
             () -> new ItemCanvas(CanvasType.TALL, "item_canvas_tall"));
+    public static final DeferredItem<ItemCanvas> ITEM_CANVAS_GLASS = ITEMS.register("item_canvas_glass",
+            () -> new ItemCanvas(CanvasType.SMALL, true));
+    public static final DeferredItem<ItemCanvas> ITEM_CANVAS_GLASS_LARGE = ITEMS.register("item_canvas_glass_large",
+            () -> new ItemCanvas(CanvasType.LARGE, true));
+    public static final DeferredItem<ItemCanvas> ITEM_CANVAS_GLASS_LONG = ITEMS.register("item_canvas_glass_long",
+            () -> new ItemCanvas(CanvasType.LONG, true));
+    public static final DeferredItem<ItemCanvas> ITEM_CANVAS_GLASS_TALL = ITEMS.register("item_canvas_glass_tall",
+            () -> new ItemCanvas(CanvasType.TALL, true));
     public static final DeferredItem<ItemEasel> ITEM_EASEL = ITEMS.register("item_easel",
             () -> new ItemEasel("item_easel"));
 
     // Data Components
     public static final Supplier<DataComponentType<List<Integer>>> CANVAS_PIXELS = DATA_COMPONENT_TYPES.register("canvas_pixels",
+            () -> DataComponentType.<List<Integer>>builder().persistent(Codec.list(Codec.INT)).networkSynchronized(ByteBufCodecs.fromCodec(Codec.list(Codec.INT))).build());
+    // Paintable canvas sides (frames): whether they are shown, and their pixels in CanvasSides order.
+    public static final Supplier<DataComponentType<Boolean>> CANVAS_SIDES_ACTIVE = DATA_COMPONENT_TYPES.register("canvas_sides_active",
+            () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
+    public static final Supplier<DataComponentType<List<Integer>>> CANVAS_SIDE_PIXELS = DATA_COMPONENT_TYPES.register("canvas_side_pixels",
             () -> DataComponentType.<List<Integer>>builder().persistent(Codec.list(Codec.INT)).networkSynchronized(ByteBufCodecs.fromCodec(Codec.list(Codec.INT))).build());
     public static final Supplier<DataComponentType<Integer>> CANVAS_VERSION = DATA_COMPONENT_TYPES.register("canvas_version",
             () -> DataComponentType.<Integer>builder().persistent(ExtraCodecs.NON_NEGATIVE_INT).networkSynchronized(ByteBufCodecs.VAR_INT).build());
@@ -110,6 +123,10 @@ public final class Items {
                         output.accept(ITEM_CANVAS_LONG.get());
                         output.accept(ITEM_CANVAS_TALL.get());
                         output.accept(ITEM_CANVAS_LARGE.get());
+                        output.accept(ITEM_CANVAS_GLASS.get());
+                        output.accept(ITEM_CANVAS_GLASS_LONG.get());
+                        output.accept(ITEM_CANVAS_GLASS_TALL.get());
+                        output.accept(ITEM_CANVAS_GLASS_LARGE.get());
                         output.accept(ITEM_EASEL.get());
                     })
                     .title(Component.translatable("itemGroup.xercapaint.paint_tab"))

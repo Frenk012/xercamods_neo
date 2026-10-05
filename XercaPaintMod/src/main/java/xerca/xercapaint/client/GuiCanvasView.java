@@ -8,10 +8,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import xerca.xercapaint.CanvasSides;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.entity.EntityEasel;
+import xerca.xercapaint.item.ItemCanvas;
 import xerca.xercapaint.item.Items;
 
+import java.util.Arrays;
 import java.util.List;
 
 @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
@@ -23,8 +26,11 @@ public class GuiCanvasView extends Screen {
     private final int canvasPixelWidth;
     private final int canvasPixelHeight;
     private final CanvasType canvasType;
+    private final boolean glass;
 
     private int[] pixels;
+    private final boolean sidesActive;
+    private int[] sidePixels;
     private String authorName = "";
     private String canvasTitle = "";
     private int generation = 0;
@@ -35,6 +41,7 @@ public class GuiCanvasView extends Screen {
         super(title);
 
         this.canvasType = canvasType;
+        this.glass = canvasStack.getItem() instanceof ItemCanvas itemCanvas && itemCanvas.isGlass();
         this.canvasPixelScale = canvasType == CanvasType.SMALL ? 10 : 5;
         this.canvasPixelWidth = CanvasType.getWidth(canvasType);
         this.canvasPixelHeight = CanvasType.getHeight(canvasType);
@@ -49,6 +56,17 @@ public class GuiCanvasView extends Screen {
             this.generation = canvasStack.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
 
             this.pixels = stackPixels.stream().mapToInt(i -> i).toArray();
+        } else {
+            this.pixels = new int[canvasPixelWidth * canvasPixelHeight];
+            Arrays.fill(this.pixels, glass ? 0 : 0xFFF9FFFE);
+        }
+
+        this.sidesActive = canvasStack.getOrDefault(Items.CANVAS_SIDES_ACTIVE.get(), false);
+        List<Integer> stackSidePixels = canvasStack.get(Items.CANVAS_SIDE_PIXELS.get());
+        if (stackSidePixels != null && stackSidePixels.size() == CanvasSides.count(canvasType)) {
+            this.sidePixels = stackSidePixels.stream().mapToInt(i -> i).toArray();
+        } else {
+            this.sidePixels = CanvasSides.defaultPixels(canvasType, glass);
         }
     }
 
@@ -60,10 +78,6 @@ public class GuiCanvasView extends Screen {
         }
     }
 
-    private int getPixelAt(int x, int y) {
-        return (this.pixels == null) ? 0xFFF9FFFE : this.pixels[y * canvasPixelWidth + x];
-    }
-
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -71,12 +85,10 @@ public class GuiCanvasView extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float f) {
-        for (int i = 0; i < canvasPixelHeight; i++) {
-            for (int j = 0; j < canvasPixelWidth; j++) {
-                int x = canvasX + j * canvasPixelScale;
-                int y = canvasY + i * canvasPixelScale;
-                guiGraphics.fill(x, y, x + canvasPixelScale, y + canvasPixelScale, getPixelAt(j, i));
-            }
+        CanvasGuiDrawing drawing = new CanvasGuiDrawing(guiGraphics, canvasPixelScale);
+        drawing.drawCanvas(canvasX, canvasY, canvasPixelWidth, canvasPixelHeight, pixels, glass);
+        if (sidesActive) {
+            drawing.drawSides(canvasX, canvasY, canvasType, sidePixels, glass);
         }
 
         if (generation > 0 && !canvasTitle.isEmpty()) {
@@ -91,10 +103,10 @@ public class GuiCanvasView extends Screen {
             float minX = Math.min(genX, titleX);
             float maxX = Math.max(genX + genWidth, titleX + titleWidth);
 
-            guiGraphics.fill((int) (minX - 10), canvasY - 30, (int) (maxX + 10), canvasY - 4, 0xFFEEEEEE);
+            guiGraphics.fill((int) (minX - 10), canvasY - 40, (int) (maxX + 10), canvasY - 14, 0xFFEEEEEE);
 
-            guiGraphics.drawString(font, title, (int) titleX, (canvasY - 25), 0xFF111111, false);
-            guiGraphics.drawString(font, gen, (int) genX, canvasY - 14, 0xFF444444, false);
+            guiGraphics.drawString(font, title, (int) titleX, (canvasY - 35), 0xFF111111, false);
+            guiGraphics.drawString(font, gen, (int) genX, canvasY - 24, 0xFF444444, false);
         }
     }
 

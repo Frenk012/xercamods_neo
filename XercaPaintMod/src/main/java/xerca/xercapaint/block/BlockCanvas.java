@@ -92,7 +92,7 @@ public class BlockCanvas extends Block implements EntityBlock {
         if (direction == facing.getOpposite() && !state.canSurvive(level, pos)) {
             // Remove all connected blocks when support is lost
             if (level instanceof Level realLevel && !realLevel.isClientSide) {
-                removeConnectedBlocks(realLevel, pos, state);
+                removeConnectedBlocks(realLevel, pos, state, true);
             }
             return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         }
@@ -141,17 +141,21 @@ public class BlockCanvas extends Block implements EntityBlock {
     @Override
     public @NotNull BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide) {
-            level.playSound(null, pos, SoundEvents.PAINTING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
+            TileEntityCanvas master = level.getBlockEntity(pos) instanceof TileEntityCanvas canvas ? canvas.getMaster() : null;
+            boolean glass = master != null && master.isGlass();
+            level.playSound(null, pos, glass ? SoundEvents.GLASS_BREAK : SoundEvents.PAINTING_BREAK, SoundSource.BLOCKS, 1.0F, 1.0F);
             // Remove all connected canvas blocks
-            removeConnectedBlocks(level, pos, state);
+            removeConnectedBlocks(level, pos, state, !player.isCreative());
         }
         return super.playerWillDestroy(level, pos, state, player);
     }
 
     /**
      * Remove all blocks that are part of the same multi-block canvas.
+     * Only the master block holds the painting, so when a secondary block is the one being broken,
+     * the painting item is dropped here before the master disappears (removeBlock never drops anything).
      */
-    private void removeConnectedBlocks(Level level, BlockPos brokenPos, BlockState state) {
+    private void removeConnectedBlocks(Level level, BlockPos brokenPos, BlockState state, boolean dropPainting) {
         if (!(level.getBlockEntity(brokenPos) instanceof TileEntityCanvas canvas)) {
             return;
         }
@@ -173,6 +177,10 @@ public class BlockCanvas extends Block implements EntityBlock {
         int widthBlocks = CanvasType.getWidth(canvasType) / 16;
         int heightBlocks = CanvasType.getHeight(canvasType) / 16;
         Direction leftDir = facing.getCounterClockWise();
+
+        if (dropPainting && !masterPos.equals(brokenPos)) {
+            Block.popResource(level, masterPos, master.getCanvasItem());
+        }
 
         // Remove all blocks except the one being broken (that one is handled normally)
         for (int h = 0; h < heightBlocks; h++) {

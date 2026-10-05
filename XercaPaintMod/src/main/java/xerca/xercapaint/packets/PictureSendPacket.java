@@ -6,7 +6,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.Mod;
 
-public record PictureSendPacket(String canvasId, int version, int[] pixels) implements CustomPacketPayload {
+public record PictureSendPacket(String canvasId, int version, int[] pixels, boolean sidesActive,
+                                int[] sidePixels) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<PictureSendPacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("picture_send"));
     public static final StreamCodec<FriendlyByteBuf, PictureSendPacket> STREAM_CODEC = StreamCodec.ofMember(PictureSendPacket::encode, PictureSendPacket::decode);
 
@@ -14,6 +15,8 @@ public record PictureSendPacket(String canvasId, int version, int[] pixels) impl
         buf.writeUtf(canvasId);
         buf.writeInt(version);
         buf.writeVarIntArray(pixels);
+        buf.writeBoolean(sidesActive);
+        buf.writeVarIntArray(sidePixels);
         return buf;
     }
 
@@ -21,7 +24,10 @@ public record PictureSendPacket(String canvasId, int version, int[] pixels) impl
         String canvasId = buf.readUtf(64);
         int version = buf.readInt();
         int[] pixels = buf.readVarIntArray(1024);
-        return new PictureSendPacket(canvasId, version, pixels);
+        boolean sidesActive = buf.readBoolean();
+        // A canvas has at most 2*(32+32) = 128 side pixels.
+        int[] sidePixels = buf.readVarIntArray(128);
+        return new PictureSendPacket(canvasId, version, pixels, sidesActive, sidePixels);
     }
 
     @Override

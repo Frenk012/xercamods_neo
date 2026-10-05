@@ -73,6 +73,14 @@ public class CommandExport {
                         tag.putInt("v", version);
                         tag.putInt("generation", generation);
                         tag.putByte("ct", (byte) ((ItemCanvas) s.getItem()).getCanvasType().ordinal());
+                        if (((ItemCanvas) s.getItem()).isGlass()) {
+                            tag.putBoolean("glass", true);
+                        }
+                        List<Integer> sidePixels = s.get(Items.CANVAS_SIDE_PIXELS.get());
+                        if (sidePixels != null) {
+                            tag.putBoolean("sidesActive", s.getOrDefault(Items.CANVAS_SIDES_ACTIVE.get(), false));
+                            tag.putIntArray("sidePixels", sidePixels.stream().mapToInt(Integer::intValue).toArray());
+                        }
                         if (title != null && author != null) {
                             tag.putString("title", title);
                             tag.putString("author", author);

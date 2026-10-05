@@ -388,6 +388,9 @@ public class EntityCanvas extends HangingEntity {
         }
     }
 
-    public record Picture(int version, int[] pixels) {
+    public record Picture(int version, int[] pixels, boolean sidesActive, int[] sidePixels) {
+        public Picture(int version, int[] pixels) {
+            this(version, pixels, false, new int[0]);
+        }
     }
 }

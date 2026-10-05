@@ -75,8 +75,10 @@ public class CommandImport {
         }
 
         byte canvasType = tag.getByte("ct");
+        boolean importedGlass = tag.getBoolean("glass");
         tag.remove("ct");
-        if (tag.getInt("generation") > 0) {
+        tag.remove("glass");
+        if (tag.getInt("generation") > 0 && tag.getInt("generation") < 3) {
             tag.putInt("generation", tag.getInt("generation") + 1);
         }
 
@@ -88,16 +90,7 @@ public class CommandImport {
                 Mod.LOGGER.error("Invalid canvas type");
                 return;
             }
-            switch (type) {
-                case SMALL -> itemStack = new ItemStack(Items.ITEM_CANVAS.get());
-                case LONG -> itemStack = new ItemStack(Items.ITEM_CANVAS_LONG.get());
-                case TALL -> itemStack = new ItemStack(Items.ITEM_CANVAS_TALL.get());
-                case LARGE -> itemStack = new ItemStack(Items.ITEM_CANVAS_LARGE.get());
-                default -> {
-                    Mod.LOGGER.error("Unknown canvas type");
-                    return;
-                }
-            }
+            itemStack = new ItemStack(ItemCanvas.canvasItemFor(type, importedGlass));
             doAddItem = true;
         } else {
             ItemStack mainhand = player.getMainHandItem();
@@ -107,18 +100,19 @@ public class CommandImport {
                 player.sendSystemMessage(Component.translatable("xercapaint.import.fail.1").withStyle(ChatFormatting.RED));
                 return;
             }
-            if (((ItemCanvas) mainhand.getItem()).getCanvasType() != CanvasType.fromByte(canvasType)) {
-                Component typeName = Items.ITEM_CANVAS.get().getName(ItemStack.EMPTY);
-                CanvasType type = CanvasType.fromByte(canvasType);
-                if (type == null) {
-                    return;
-                }
-                switch (type) {
-                    case LONG -> typeName = Items.ITEM_CANVAS_LONG.get().getName(ItemStack.EMPTY);
-                    case TALL -> typeName = Items.ITEM_CANVAS_TALL.get().getName(ItemStack.EMPTY);
-                    case LARGE -> typeName = Items.ITEM_CANVAS_LARGE.get().getName(ItemStack.EMPTY);
-                }
+            CanvasType type = CanvasType.fromByte(canvasType);
+            if (type == null) {
+                return;
+            }
+            ItemCanvas heldCanvas = (ItemCanvas) mainhand.getItem();
+            if (heldCanvas.getCanvasType() != type) {
+                Component typeName = ItemCanvas.canvasItemFor(type, importedGlass).getName(ItemStack.EMPTY);
                 player.sendSystemMessage(Component.translatable("xercapaint.import.fail.2", typeName).withStyle(ChatFormatting.RED));
+                return;
+            }
+            if (heldCanvas.isGlass() != importedGlass) {
+                Component typeName = ItemCanvas.canvasItemFor(type, importedGlass).getName(ItemStack.EMPTY);
+                player.sendSystemMessage(Component.translatable("xercapaint.import.fail.material", typeName).withStyle(ChatFormatting.RED));
                 return;
             }
             if (!ItemPalette.isFull(offhand)) {
@@ -136,6 +130,15 @@ public class CommandImport {
             itemStack.set(Items.CANVAS_TITLE.get(), tag.getString("title"));
             itemStack.set(Items.CANVAS_AUTHOR.get(), tag.getString("author"));
         }
+        if (tag.contains("sidePixels")) {
+            int[] sidePixels = tag.getIntArray("sidePixels");
+            CanvasType importedType = ((ItemCanvas) itemStack.getItem()).getCanvasType();
+            if (sidePixels.length == CanvasSides.count(importedType)) {
+                itemStack.set(Items.CANVAS_SIDES_ACTIVE.get(), tag.getBoolean("sidesActive"));
+                itemStack.set(Items.CANVAS_SIDE_PIXELS.get(), Arrays.stream(sidePixels).boxed().toList());
+            }
+        }
+        ItemCanvas.updateStackSize(itemStack);
         if (doAddItem) {
             player.addItem(itemStack);
         }

@@ -92,6 +92,10 @@ public class ModClient {
             ItemProperties.register(Items.ITEM_CANVAS_LARGE.get(), Mod.id("drawn"), drawn);
             ItemProperties.register(Items.ITEM_CANVAS_LONG.get(), Mod.id("drawn"), drawn);
             ItemProperties.register(Items.ITEM_CANVAS_TALL.get(), Mod.id("drawn"), drawn);
+            ItemProperties.register(Items.ITEM_CANVAS_GLASS.get(), Mod.id("drawn"), drawn);
+            ItemProperties.register(Items.ITEM_CANVAS_GLASS_LARGE.get(), Mod.id("drawn"), drawn);
+            ItemProperties.register(Items.ITEM_CANVAS_GLASS_LONG.get(), Mod.id("drawn"), drawn);
+            ItemProperties.register(Items.ITEM_CANVAS_GLASS_TALL.get(), Mod.id("drawn"), drawn);
             ItemProperties.register(Items.ITEM_PALETTE.get(), Mod.id("colors"), colors);
 
             Mod.LOGGER.info("XercaPaint: Registered item properties for canvas and palette");
@@ -117,7 +121,11 @@ public class ModClient {
             Items.ITEM_CANVAS.get(),
             Items.ITEM_CANVAS_LARGE.get(),
             Items.ITEM_CANVAS_LONG.get(),
-            Items.ITEM_CANVAS_TALL.get()
+            Items.ITEM_CANVAS_TALL.get(),
+            Items.ITEM_CANVAS_GLASS.get(),
+            Items.ITEM_CANVAS_GLASS_LARGE.get(),
+            Items.ITEM_CANVAS_GLASS_LONG.get(),
+            Items.ITEM_CANVAS_GLASS_TALL.get()
         );
 
         Mod.LOGGER.info("XercaPaint: Client extensions registered successfully");

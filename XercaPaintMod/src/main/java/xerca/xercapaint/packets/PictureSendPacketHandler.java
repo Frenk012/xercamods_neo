@@ -5,10 +5,9 @@ import xerca.xercapaint.entity.EntityCanvas;
 
 public class PictureSendPacketHandler {
     private static void processMessage(PictureSendPacket msg) {
-        EntityCanvas.PICTURES.put(msg.canvasId(), new EntityCanvas.Picture(msg.version(), msg.pixels()));
-        if (!EntityCanvas.PICTURE_REQUESTS.contains(msg.canvasId())) {
-            EntityCanvas.PICTURE_REQUESTS.remove(msg.canvasId());
-        }
+        EntityCanvas.PICTURES.put(msg.canvasId(), new EntityCanvas.Picture(msg.version(), msg.pixels(), msg.sidesActive(), msg.sidePixels()));
+        // The request is answered, so a newer version of this picture can be requested again later.
+        EntityCanvas.PICTURE_REQUESTS.remove(msg.canvasId());
     }
 
     public static void handle(PictureSendPacket packet, IPayloadContext context) {

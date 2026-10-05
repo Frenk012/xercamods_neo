@@ -3,6 +3,7 @@ package xerca.xercapaint.item;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvents;
@@ -31,11 +32,48 @@ import java.util.List;
 
 @NonnullDefault
 public class ItemCanvas extends Item {
+    public static final int SIGNED_STACK_SIZE = 16;
+
     private final CanvasType canvasType;
+    private final boolean glass;
 
     ItemCanvas(CanvasType canvasType, String name) {
+        this(canvasType, false);
+    }
+
+    ItemCanvas(CanvasType canvasType, boolean glass) {
         super(new Item.Properties().stacksTo(1));
         this.canvasType = canvasType;
+        this.glass = glass;
+    }
+
+    public boolean isGlass() {
+        return glass;
+    }
+
+    public static Item canvasItemFor(CanvasType type, boolean glass) {
+        return switch (type) {
+            case SMALL -> glass ? Items.ITEM_CANVAS_GLASS.get() : Items.ITEM_CANVAS.get();
+            case LONG -> glass ? Items.ITEM_CANVAS_GLASS_LONG.get() : Items.ITEM_CANVAS_LONG.get();
+            case TALL -> glass ? Items.ITEM_CANVAS_GLASS_TALL.get() : Items.ITEM_CANVAS_TALL.get();
+            case LARGE -> glass ? Items.ITEM_CANVAS_GLASS_LARGE.get() : Items.ITEM_CANVAS_LARGE.get();
+        };
+    }
+
+    /**
+     * Signed canvases are final, so identical copies can be stacked.
+     */
+    public static void updateStackSize(ItemStack stack) {
+        if (stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0) {
+            stack.set(DataComponents.MAX_STACK_SIZE, SIGNED_STACK_SIZE);
+        } else if (stack.getOrDefault(DataComponents.MAX_STACK_SIZE, 1) > 1) {
+            stack.remove(DataComponents.MAX_STACK_SIZE);
+        }
+    }
+
+    @Override
+    public void verifyComponentsAfterLoad(ItemStack stack) {
+        updateStackSize(stack);
     }
 
     @Override
@@ -87,7 +125,7 @@ public class ItemCanvas extends Item {
                         // Place all blocks for multi-block canvas
                         placeMultiBlockCanvas(world, pos, direction, canvasType, canvasState, itemstack, rotation);
 
-                        world.playSound(null, pos, SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                        world.playSound(null, pos, glass ? SoundEvents.GLASS_PLACE : SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
                         itemstack.shrink(1);
                     }
                 }
@@ -176,9 +214,10 @@ public class ItemCanvas extends Item {
             }
 
             int generation = stack.getOrDefault(Items.CANVAS_GENERATION.get(), 0);
-            // generation = 0 means empty, 1 means original, more means copy
+            // generation = 0 means empty, 1 means original, 2 copy of original, 3 copy of copy
             if (generation > 0) {
-                tooltipComponents.add((Component.translatable("canvas.generation." + (generation - 1))).withStyle(ChatFormatting.GRAY));
+                tooltipComponents.add((Component.translatable("canvas.generation." + (generation - 1)))
+                        .withStyle(generation == 1 ? ChatFormatting.GOLD : ChatFormatting.GRAY));
             }
             // Feature 10: mark protected (waxed) paintings.
             if (stack.getOrDefault(Items.CANVAS_WAXED.get(), false)) {
@@ -234,10 +273,10 @@ public class ItemCanvas extends Item {
                 if (world.getBlockEntity(blockPos) instanceof TileEntityCanvas canvas) {
                     if (h == 0 && w == 0) {
                         // This is the master block
-                        canvas.loadFromStack(itemstack, canvasType, rotation);
+                        canvas.loadFromStack(itemstack, canvasType, glass, rotation);
                     } else {
                         // This is a secondary block - reference the master
-                        canvas.setAsPart(pos, canvasType, rotation);
+                        canvas.setAsPart(pos, canvasType, glass, rotation);
                     }
                     world.sendBlockUpdated(blockPos, canvasState, canvasState, 3);
                 }

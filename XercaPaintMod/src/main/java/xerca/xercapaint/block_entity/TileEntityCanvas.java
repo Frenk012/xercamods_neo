@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.entity.EntityCanvas;
+import xerca.xercapaint.item.ItemCanvas;
 import xerca.xercapaint.item.Items;
 import xerca.xercapaint.packets.PictureRequestPacket;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -28,6 +29,10 @@ public class TileEntityCanvas extends BlockEntity {
     private int generation = 0;
     private int rotation = 0;
     private CanvasType canvasType = CanvasType.SMALL;
+    private boolean glass = false;
+    private boolean waxed = false;
+    private boolean sidesActive = false;
+    private int[] sidePixels = new int[0];
 
     // Multi-block support: master position (null if this is the master)
     private BlockPos masterPos = null;
@@ -37,9 +42,14 @@ public class TileEntityCanvas extends BlockEntity {
         super(BlockEntities.CANVAS.get(), pos, state);
     }
 
-    public void loadFromStack(ItemStack stack, CanvasType type, int rotation) {
+    public void loadFromStack(ItemStack stack, CanvasType type, boolean glass, int rotation) {
         this.canvasType = type;
+        this.glass = glass;
         this.rotation = rotation;
+        this.waxed = stack.getOrDefault(Items.CANVAS_WAXED.get(), false);
+        this.sidesActive = stack.getOrDefault(Items.CANVAS_SIDES_ACTIVE.get(), false);
+        var sideList = stack.get(Items.CANVAS_SIDE_PIXELS.get());
+        this.sidePixels = sideList != null ? sideList.stream().mapToInt(i -> i).toArray() : new int[0];
 
         String id = stack.get(Items.CANVAS_ID.get());
         if (id != null) {
@@ -52,7 +62,7 @@ public class TileEntityCanvas extends BlockEntity {
         if (pixelList != null) {
             this.pixels = pixelList.stream().mapToInt(i -> i).toArray();
             // Also store in the shared picture cache
-            EntityCanvas.PICTURES.put(canvasId, new EntityCanvas.Picture(version, pixels));
+            EntityCanvas.PICTURES.put(canvasId, new EntityCanvas.Picture(version, pixels, sidesActive, sidePixels));
         }
 
         String stackTitle = stack.get(Items.CANVAS_TITLE.get());
@@ -71,13 +81,7 @@ public class TileEntityCanvas extends BlockEntity {
     }
 
     public ItemStack getCanvasItem() {
-        ItemStack stack;
-        switch (canvasType) {
-            case LARGE -> stack = new ItemStack(Items.ITEM_CANVAS_LARGE.get());
-            case LONG -> stack = new ItemStack(Items.ITEM_CANVAS_LONG.get());
-            case TALL -> stack = new ItemStack(Items.ITEM_CANVAS_TALL.get());
-            default -> stack = new ItemStack(Items.ITEM_CANVAS.get());
-        }
+        ItemStack stack = new ItemStack(ItemCanvas.canvasItemFor(canvasType, glass));
 
         if (!canvasId.isEmpty()) {
             stack.set(Items.CANVAS_ID.get(), canvasId);
@@ -94,6 +98,16 @@ public class TileEntityCanvas extends BlockEntity {
             stack.set(Items.CANVAS_GENERATION.get(), generation);
         }
 
+        if (sidePixels.length > 0) {
+            stack.set(Items.CANVAS_SIDES_ACTIVE.get(), sidesActive);
+            stack.set(Items.CANVAS_SIDE_PIXELS.get(), Arrays.stream(sidePixels).boxed().toList());
+        }
+
+        if (waxed) {
+            stack.set(Items.CANVAS_WAXED.get(), true);
+        }
+
+        ItemCanvas.updateStackSize(stack);
         return stack;
     }
 
@@ -104,6 +118,12 @@ public class TileEntityCanvas extends BlockEntity {
         tag.putInt("version", version);
         tag.putByte("canvasType", (byte) canvasType.ordinal());
         tag.putByte("rotation", (byte) rotation);
+        tag.putBoolean("glass", glass);
+        tag.putBoolean("waxed", waxed);
+        tag.putBoolean("sidesActive", sidesActive);
+        if (sidePixels.length > 0) {
+            tag.putIntArray("sidePixels", sidePixels);
+        }
         tag.putString("title", title);
         tag.putString("author", author);
         tag.putInt("generation", generation);
@@ -126,6 +146,10 @@ public class TileEntityCanvas extends BlockEntity {
         canvasType = CanvasType.fromByte(tag.getByte("canvasType"));
         if (canvasType == null) canvasType = CanvasType.SMALL;
         rotation = tag.getByte("rotation");
+        glass = tag.getBoolean("glass");
+        waxed = tag.getBoolean("waxed");
+        sidesActive = tag.getBoolean("sidesActive");
+        sidePixels = tag.contains("sidePixels") ? tag.getIntArray("sidePixels") : new int[0];
         title = tag.getString("title");
         author = tag.getString("author");
         generation = tag.getInt("generation");
@@ -141,7 +165,7 @@ public class TileEntityCanvas extends BlockEntity {
             if (!canvasId.isEmpty() && pixels.length > 0) {
                 EntityCanvas.Picture existing = EntityCanvas.PICTURES.get(canvasId);
                 if (existing == null || existing.version() < version) {
-                    EntityCanvas.PICTURES.put(canvasId, new EntityCanvas.Picture(version, pixels));
+                    EntityCanvas.PICTURES.put(canvasId, new EntityCanvas.Picture(version, pixels, sidesActive, sidePixels));
                 }
             }
         }
@@ -212,6 +236,18 @@ public class TileEntityCanvas extends BlockEntity {
         return canvasType;
     }
 
+    public boolean isGlass() {
+        return glass;
+    }
+
+    public boolean isSidesActive() {
+        return sidesActive;
+    }
+
+    public int[] getSidePixels() {
+        return sidePixels;
+    }
+
     public int getWidth() {
         return CanvasType.getWidth(canvasType);
     }
@@ -233,10 +269,11 @@ public class TileEntityCanvas extends BlockEntity {
         return masterPos;
     }
 
-    public void setAsPart(BlockPos masterPos, CanvasType type, int rotation) {
+    public void setAsPart(BlockPos masterPos, CanvasType type, boolean glass, int rotation) {
         this.isMaster = false;
         this.masterPos = masterPos;
         this.canvasType = type;
+        this.glass = glass;
         this.rotation = rotation;
         setChanged();
     }

@@ -7,6 +7,7 @@ import xerca.xercapaint.Mod;
 import xerca.xercapaint.entity.EntityEasel;
 import xerca.xercapaint.item.ItemCanvas;
 import xerca.xercapaint.item.ItemPalette;
+import xerca.xercapaint.item.Items;
 
 import javax.annotation.Nullable;
 
@@ -57,5 +58,33 @@ public class CanvasUpdateUtils {
 
         Mod.LOGGER.error("CanvasUpdateUtils: Palette not found on player's hands!");
         return null;
+    }
+
+    /**
+     * Paint charges are tracked by the client while painting, so the server must not trust the reported values blindly.
+     * A colour can only ever go down while painting: anything above the stored charge (or a malformed array) is ignored.
+     */
+    public static Items.PaletteCharges sanitizeCharges(Items.PaletteCharges current, int[] reported) {
+        if (reported == null || reported.length != Items.PaletteCharges.SIZE) {
+            return current;
+        }
+        int[] result = new int[Items.PaletteCharges.SIZE];
+        for (int i = 0; i < Items.PaletteCharges.SIZE; i++) {
+            result[i] = Math.max(0, Math.min(current.get(i), reported[i]));
+        }
+        return new Items.PaletteCharges(result);
+    }
+
+    public static void consumePaletteCharges(ItemStack palette, int[] reported) {
+        Items.PaletteCharges current = palette.getOrDefault(Items.PALETTE_CHARGES.get(), Items.PaletteCharges.empty());
+        palette.set(Items.PALETTE_CHARGES.get(), sanitizeCharges(current, reported));
+    }
+
+    /**
+     * Signed and waxed canvases are final and must not be overwritten by canvas update packets.
+     */
+    public static boolean isLocked(ItemStack canvas) {
+        return canvas.getOrDefault(Items.CANVAS_WAXED.get(), false)
+                || canvas.getOrDefault(Items.CANVAS_GENERATION.get(), 0) > 0;
     }
 }

@@ -1,34 +1,24 @@
 package xerca.xercapaint.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import xerca.xercapaint.Mod;
 import xerca.xercapaint.block.BlockCanvas;
 import xerca.xercapaint.block_entity.TileEntityCanvas;
 import xerca.xercapaint.entity.EntityCanvas;
 
 @OnlyIn(Dist.CLIENT)
 public class RenderBlockCanvas implements BlockEntityRenderer<TileEntityCanvas> {
-    private static final ResourceLocation BACK_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/birch_planks.png");
-    private static final ResourceLocation EMPTY_CANVAS = Mod.id("textures/block/empty.png");
 
     private final Font font;
 
@@ -70,12 +60,14 @@ public class RenderBlockCanvas implements BlockEntityRenderer<TileEntityCanvas> 
             canvasInstance = CanvasTextureManager.INSTANCE.getCanvasInstance(canvasId, version, width, height);
         }
 
-        // Render the canvas
-        if (canvasInstance != null) {
-            renderCanvasTexture(poseStack, buffer, canvasInstance, width, height, packedLight);
-        } else {
-            renderEmptyCanvas(poseStack, buffer, width, height, packedLight);
-        }
+        // Position canvas so the block is the bottom-left corner (like vanilla paintings):
+        // it extends to the left (-X) and up (+Y) from the block position, with the front flush at z = 0.
+        float wBlocks = width / 16.0f;
+        poseStack.translate(0.5 - wBlocks, -0.5, 1.0 / 32.0);
+        poseStack.scale(1.0f / 32.0f, 1.0f / 32.0f, 1.0f / 32.0f);
+        CanvasTextureManager.INSTANCE.drawModel(poseStack.last(), buffer, packedLight,
+                canvasInstance != null ? canvasInstance.location : null, width, height,
+                canvas.isGlass(), canvas.isSidesActive(), canvas.getSidePixels(), CanvasTextureManager.NO_TINT);
 
         poseStack.popPose();
 
@@ -112,88 +104,6 @@ public class RenderBlockCanvas implements BlockEntityRenderer<TileEntityCanvas> 
                 poseStack.translate(0, 0, offset);
             }
         }
-    }
-
-    private void renderCanvasTexture(PoseStack poseStack, MultiBufferSource buffer,
-                                      CanvasTextureManager.CanvasInstance canvasInstance,
-                                      int width, int height, int packedLight) {
-        // Width and height in blocks (16 pixels = 1 block)
-        float wBlocks = width / 16.0f;
-        float hBlocks = height / 16.0f;
-
-        poseStack.pushPose();
-
-        // Position canvas so the block is the bottom-left corner (like vanilla paintings)
-        // Canvas extends to the left (-X) and up (+Y) from the block position
-        // For a 1x1 canvas: translate to (-0.5, -0.5)
-        // For a 2x1 canvas: translate to (0.5, -0.5) so it extends left to -1.5
-        poseStack.translate(0.5 - wBlocks, -0.5, 0);
-
-        Matrix4f m = poseStack.last().pose();
-        PoseStack.Pose pose = poseStack.last();
-        VertexConsumer vb = buffer.getBuffer(RenderType.entitySolid(canvasInstance.location));
-
-        // Draw front face (size in blocks)
-        addVertex(vb, m, pose, 0, hBlocks, 0, 1, 0, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, wBlocks, hBlocks, 0, 0, 0, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, wBlocks, 0, 0, 0, 1, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, 0, 0, 0, 1, 1, packedLight, 0, 0, -1);
-
-        // Draw back face
-        float backZ = 0.0625f; // 1/16 block depth
-        vb = buffer.getBuffer(RenderType.entitySolid(BACK_TEXTURE));
-        addVertex(vb, m, pose, 0, 0, backZ, 0, 0, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, wBlocks, 0, backZ, wBlocks, 0, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, wBlocks, hBlocks, backZ, wBlocks, hBlocks, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, 0, hBlocks, backZ, 0, hBlocks, packedLight, 0, 0, 1);
-
-        poseStack.popPose();
-    }
-
-    private void renderEmptyCanvas(PoseStack poseStack, MultiBufferSource buffer,
-                                    int width, int height, int packedLight) {
-        // Width and height in blocks (16 pixels = 1 block)
-        float wBlocks = width / 16.0f;
-        float hBlocks = height / 16.0f;
-
-        poseStack.pushPose();
-
-        // Position canvas so the block is the bottom-left corner (like vanilla paintings)
-        // Canvas extends to the left (-X) and up (+Y) from the block position
-        poseStack.translate(0.5 - wBlocks, -0.5, 0);
-
-        Matrix4f m = poseStack.last().pose();
-        PoseStack.Pose pose = poseStack.last();
-        VertexConsumer vb = buffer.getBuffer(RenderType.entitySolid(EMPTY_CANVAS));
-
-        // Draw front face (size in blocks)
-        addVertex(vb, m, pose, 0, hBlocks, 0, 1, 0, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, wBlocks, hBlocks, 0, 0, 0, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, wBlocks, 0, 0, 0, 1, packedLight, 0, 0, -1);
-        addVertex(vb, m, pose, 0, 0, 0, 1, 1, packedLight, 0, 0, -1);
-
-        // Draw back face
-        float backZ = 0.0625f;
-        vb = buffer.getBuffer(RenderType.entitySolid(BACK_TEXTURE));
-        addVertex(vb, m, pose, 0, 0, backZ, 0, 0, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, wBlocks, 0, backZ, wBlocks, 0, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, wBlocks, hBlocks, backZ, wBlocks, hBlocks, packedLight, 0, 0, 1);
-        addVertex(vb, m, pose, 0, hBlocks, backZ, 0, hBlocks, packedLight, 0, 0, 1);
-
-        poseStack.popPose();
-    }
-
-    private void addVertex(VertexConsumer vb, Matrix4f m, PoseStack.Pose pose,
-                           float x, float y, float z, float u, float v, int light,
-                           float nx, float ny, float nz) {
-        Vector3f normal = new Vector3f(nx, ny, nz);
-        normal.mul(pose.normal());
-        vb.addVertex(m, x, y, z)
-                .setColor(255, 255, 255, 255)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(normal.x(), normal.y(), normal.z());
     }
 
     private void renderNameTagIfNeeded(TileEntityCanvas canvas, PoseStack poseStack,

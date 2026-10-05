@@ -107,11 +107,12 @@ public class RenderEntityEasel extends EntityRenderer<EntityEasel> {
             if (itemstack.get(Items.CANVAS_PIXELS.get()) != null) {
                 CanvasTextureManager.CanvasInstance canvasIns = CanvasTextureManager.INSTANCE.getCanvasInstance(itemstack, itemCanvas.getWidth(), itemCanvas.getHeight());
                 if (canvasIns != null) {
-                    canvasIns.render(null, 0, 0, poseStack, bufferSource, Direction.UP, packedLight);
+                    canvasIns.renderForEasel(poseStack, bufferSource, packedLight, itemCanvas.isGlass(),
+                            CanvasTextureManager.sidesActive(itemstack), CanvasTextureManager.sidePixels(itemstack));
                 }
             } else {
                 // Render empty canvas with same positioning as filled canvas
-                CanvasTextureManager.INSTANCE.renderEmptyForEasel(poseStack, bufferSource, itemCanvas.getWidth(), itemCanvas.getHeight(), packedLight);
+                CanvasTextureManager.INSTANCE.renderEmptyForEasel(poseStack, bufferSource, itemCanvas.getWidth(), itemCanvas.getHeight(), packedLight, itemCanvas.isGlass());
             }
 
             poseStack.popPose();

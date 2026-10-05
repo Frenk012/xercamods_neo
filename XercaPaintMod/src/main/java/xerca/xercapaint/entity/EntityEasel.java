@@ -150,7 +150,8 @@ public class EntityEasel extends Entity {
         this.getEntityData().set(DATA_CANVAS, itemStack);
         if (makeSound) {
             if (!itemStack.isEmpty()) {
-                this.playSound(SoundEvents.PAINTING_PLACE, 1.0F, 1.0F);
+                boolean glass = itemStack.getItem() instanceof ItemCanvas itemCanvas && itemCanvas.isGlass();
+                this.playSound(glass ? SoundEvents.GLASS_PLACE : SoundEvents.PAINTING_PLACE, 1.0F, 1.0F);
             } else {
                 this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
             }

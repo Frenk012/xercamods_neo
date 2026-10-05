@@ -4,12 +4,14 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
+import xerca.xercapaint.CanvasSides;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.item.Items;
 
 public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version, int easelId,
-                                     CanvasType canvasType, int[] basicColorsCharges) implements CustomPacketPayload {
+                                     CanvasType canvasType, int[] basicColorsCharges,
+                                 boolean sidesActive, int[] sidePixels) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CanvasMiniUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("canvas_mini_update"));
     public static final StreamCodec<FriendlyByteBuf, CanvasMiniUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(CanvasMiniUpdatePacket::encode, CanvasMiniUpdatePacket::decode);
 
@@ -20,6 +22,8 @@ public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version,
         buf.writeUtf(canvasId);
         buf.writeVarIntArray(pixels);
         buf.writeVarIntArray(basicColorsCharges);
+        buf.writeBoolean(sidesActive);
+        buf.writeVarIntArray(sidePixels);
         return buf;
     }
 
@@ -32,7 +36,9 @@ public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version,
         int area = CanvasType.getHeight(canvasType) * CanvasType.getWidth(canvasType);
         int[] pixels = buf.readVarIntArray(area);
         int[] basicColorsCharges = buf.readVarIntArray(Items.BasicColors.SIZE);
-        return new CanvasMiniUpdatePacket(pixels, canvasId, version, easalId, canvasType, basicColorsCharges);
+        boolean sidesActive = buf.readBoolean();
+        int[] sidePixels = buf.readVarIntArray(CanvasSides.count(canvasType));
+        return new CanvasMiniUpdatePacket(pixels, canvasId, version, easalId, canvasType, basicColorsCharges, sidesActive, sidePixels);
     }
 
     @Override

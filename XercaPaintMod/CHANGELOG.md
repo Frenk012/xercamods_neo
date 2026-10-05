@@ -1,5 +1,36 @@
 # XercaPaint — Update Notes
 
+## 1.4.0 — Glass paintings, painted frames & dye-cost fixes
+
+### ✨ New (ported from the original mod's 2.0 update)
+- **Glass canvases** (small, long, tall, large) for **transparent paintings**. Craft with 8 sticks around a glass pane; combine them like regular canvases. Right-click erases back to fully transparent; empty glass shows a checkerboard in the editor and a glass frame in the world.
+- **Paintable frames (canvas sides)**: toggle them with the small button next to the canvas holder and paint the edges of your canvas. Works on regular and glass canvases, on walls, easels and in hand.
+- **Signed paintings stack up to 16**.
+- Help tooltips in the painting GUI are now **translated**; the painting GUI no longer **blurs the world** behind it.
+- New/updated translations (Italian, Polish, Icelandic and more Spanish locales added).
+
+### 🎨 Dye cost (thanks to **trygve555**, PR #1)
+- Dye charge is now spent **per painted pixel**, scaled by brush **opacity**, and tracked live in the GUI.
+- You can no longer paint with a colour that has run out; the palette shows **how much paint is left** in each slot.
+- No colour is selected when opening the GUI (the brush is shown clean), and the selected colour no longer carries over between canvases.
+- Custom colours that can no longer be mixed from your remaining paint are cleared (only when dye cost is enabled).
+- New server option `[editor] allowErase` to disable right-click erasing.
+- Default `maxCharge` is now `1024`.
+
+### 🐛 Fixes
+- Server now **validates** the paint charges reported by the client: a palette can only lose paint while painting (prevents infinite-paint cheats and malformed packets).
+- Erasing no longer needs a selected colour and **no longer consumes dye**.
+- Signed or waxed canvases can no longer be overwritten by edit packets; the easel is released correctly when an edit is rejected.
+- **Breaking a large/long/tall painting from any of its blocks now drops the painting** (previously only the bottom-left block dropped it, the others destroyed it).
+- **Waxed (protected)** state and painted frames are now kept when a painting is placed on a wall and broken again.
+- Paintings re-request their image from the server when a newer version exists (the request cache was never cleared).
+- Recipe-book unlock advancements were in the wrong folder for 1.21 and never loaded; recipes now unlock properly.
+- Import/export (`/paintexport`, `/paintimport`) keep glass material and painted frames.
+
+---
+
+## 1.3.0
+
 A survival-focused update that turns painting into a real resource loop, spreads paintings across the world, and adds server-side control. All new mechanics are **off or non-invasive by default** — nothing changes for existing worlds unless you opt in.
 
 ---

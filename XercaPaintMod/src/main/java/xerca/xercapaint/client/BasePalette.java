@@ -49,6 +49,7 @@ public abstract class BasePalette extends Screen {
     double paletteY;
     protected static final PaletteUtil.Color waterColor = new PaletteUtil.Color(53, 118, 191);
     private static final PaletteUtil.Color EMPTY_BRUSH_COLOR = new PaletteUtil.Color(206, 167, 140);
+    private static final PaletteUtil.Color EMPTY_SLOT_COLOR = new PaletteUtil.Color(235, 186, 139);
 
     // Shared with the server for charge accounting; see PaletteUtil.BASIC_COLORS.
     final static PaletteUtil.Color[] basicColors = PaletteUtil.BASIC_COLORS;
@@ -99,6 +100,8 @@ public abstract class BasePalette extends Screen {
     protected static PaletteUtil.Color currentColor = null;
     final PaletteUtil.CustomColor[] customColors = new PaletteUtil.CustomColor[12];
     final boolean[] basicColorFlags = new boolean[16];
+    // Which basic colours have been unlocked on the palette by crafting it with their dye (independent of charge).
+    final boolean[] basicColorOwned = new boolean[16];
     final int[] basicColorChargesPermille = new int[16];
     final boolean useDyeCosts;
     boolean paletteComplete = false;
@@ -123,7 +126,8 @@ public abstract class BasePalette extends Screen {
         if (basics != null) {
             paletteComplete = true;
             for (int i = 0; i < Items.BasicColors.SIZE; i++) {
-                basicColorFlags[i] = basics.get(i) > 0 && (!useDyeCosts || charges.get(i) > 0);
+                basicColorOwned[i] = basics.get(i) > 0;
+                basicColorFlags[i] = basicColorOwned[i] && (!useDyeCosts || charges.get(i) > 0);
                 basicColorChargesPermille[i] = charges.get(i) * 1000;
                 paletteComplete &= basicColorFlags[i];
             }
@@ -151,7 +155,7 @@ public abstract class BasePalette extends Screen {
     }
 
     protected void useDyeCharge(float dyeCostModifier) {
-        if (!useDyeCosts && hasSelectedColor()) {
+        if (!useDyeCosts || !hasSelectedColor()) {
             return;
         }
 
@@ -197,8 +201,13 @@ public abstract class BasePalette extends Screen {
     }
 
     private void removeImpossibleCustomColors() {
+        // Only relevant when paint costs dye: without it every unlocked colour is always available, and the
+        // composition estimate is approximate, so it must never delete the player's custom colours.
+        if (!useDyeCosts) {
+            return;
+        }
         for (int i = 0; i < customColors.length; i++) {
-            if (!isCustomColorPossible(customColors[i].getColor())) {
+            if (customColors[i].getNumberOfColors() > 0 && !isCustomColorPossible(customColors[i].getColor())) {
                 if (customColors[i].getColor() == currentColor) {
                     currentColor = null;
                 }
@@ -219,12 +228,11 @@ public abstract class BasePalette extends Screen {
 
     protected void updateAvailableColors() {
         for (int i = 0; i < Items.BasicColors.SIZE; i++) {
-            basicColorFlags[i] = basicColorChargesPermille[i] > 0;
+            basicColorFlags[i] = basicColorOwned[i] && basicColorChargesPermille[i] > 0;
             paletteComplete &= basicColorFlags[i];
 
             if (currentColor == basicColors[i] && !basicColorFlags[i]) {
                 currentColor = null;
-                return;
             }
         }
     }
@@ -240,19 +248,24 @@ public abstract class BasePalette extends Screen {
         RenderSystem.setShaderTexture(0, paletteTextures);
 
         // Draw basic colors
+        int[] charges = getBasicColorCharges();
+        int maxCharge = Math.max(1, Config.maxCharge());
         for (int i = 0; i < basicColorFlags.length; i++) {
             int x = (int) paletteX + (int) basicColorCenters[i].x;
             int y = (int) paletteY + (int) basicColorCenters[i].y;
             int r = (int) basicColorRadius;
+            int size = 2 * r + 1;
 
-            guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, new PaletteUtil.Color(235, 186, 139).rgbVal());
+            guiGraphics.fill(x - r, y - r, x + r + 1, y + r + 1, EMPTY_SLOT_COLOR.rgbVal());
 
-            int r2 = r;
-            if (useDyeCosts) {
-                r2 = (int) Math.ceil(basicColorRadius * ((float) getBasicColorCharges()[i] / ((float) Config.maxCharge() / 2) - 1));
+            // Without dye cost an unlocked colour is full; with dye cost the slot fills up with the remaining charge.
+            int filledWidth = 0;
+            if (basicColorOwned[i]) {
+                filledWidth = useDyeCosts ? Math.round(size * Math.min(1.0f, (float) charges[i] / maxCharge)) : size;
             }
-
-            guiGraphics.fill(x - r, y - r, x + r2 + 1, y + r + 1, basicColors[i].rgbVal());
+            if (filledWidth > 0) {
+                guiGraphics.fill(x - r, y - r, x - r + filledWidth, y + r + 1, basicColors[i].rgbVal());
+            }
 
             if (basicColorFlags[i]) {
                 guiGraphics.blit(paletteTextures, x - 8, y - 8, dyeSpriteX, i * dyeSpriteSize, dyeSpriteSize, dyeSpriteSize, 256, 256);

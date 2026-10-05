@@ -4,6 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
+import xerca.xercapaint.CanvasSides;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.PaletteUtil;
@@ -11,7 +12,8 @@ import xerca.xercapaint.item.Items;
 
 public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, String canvasId, int version, int easelId,
                                  PaletteUtil.CustomColor[] paletteColors,
-                                 CanvasType canvasType, int[] basicColorsCharges) implements CustomPacketPayload {
+                                 CanvasType canvasType, int[] basicColorsCharges,
+                                 boolean sidesActive, int[] sidePixels) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CanvasUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("canvas_update"));
     public static final StreamCodec<FriendlyByteBuf, CanvasUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(CanvasUpdatePacket::encode, CanvasUpdatePacket::decode);
 
@@ -27,6 +29,8 @@ public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, Str
         buf.writeBoolean(signed);
         buf.writeVarIntArray(pixels);
         buf.writeVarIntArray(basicColorsCharges);
+        buf.writeBoolean(sidesActive);
+        buf.writeVarIntArray(sidePixels);
         return buf;
     }
 
@@ -45,7 +49,9 @@ public record CanvasUpdatePacket(int[] pixels, boolean signed, String title, Str
         int area = CanvasType.getHeight(canvasType) * CanvasType.getWidth(canvasType);
         int[] pixels = buf.readVarIntArray(area);
         int[] basicColorsCharges = buf.readVarIntArray(Items.BasicColors.SIZE);
-        return new CanvasUpdatePacket(pixels, signed, title, canvasId, version, easelId, paletteColors, canvasType, basicColorsCharges);
+        boolean sidesActive = buf.readBoolean();
+        int[] sidePixels = buf.readVarIntArray(CanvasSides.count(canvasType));
+        return new CanvasUpdatePacket(pixels, signed, title, canvasId, version, easelId, paletteColors, canvasType, basicColorsCharges, sidesActive, sidePixels);
     }
 
     @Override

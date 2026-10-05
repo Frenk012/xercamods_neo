@@ -10,7 +10,7 @@ public class PictureRequestPacketHandler {
         String canvasId = msg.canvasId();
         EntityCanvas.Picture picture = EntityCanvas.PICTURES.get(canvasId);
         if (picture != null) {
-            PictureSendPacket pack = new PictureSendPacket(canvasId, picture.version(), picture.pixels());
+            PictureSendPacket pack = new PictureSendPacket(canvasId, picture.version(), picture.pixels(), picture.sidesActive(), picture.sidePixels());
             PacketDistributor.sendToPlayer(pl, pack);
         }
     }

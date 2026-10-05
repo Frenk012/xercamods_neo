@@ -3,6 +3,7 @@ package xerca.xercapaint.packets;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xerca.xercapaint.CanvasSides;
 import xerca.xercapaint.Config;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.entity.EntityEasel;
@@ -23,16 +24,24 @@ public class CanvasMiniUpdatePacketHandler {
         ItemStack palette = CanvasUpdateUtils.getPalette(pl);
 
         if (canvas != null && !canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
+            if (CanvasUpdateUtils.isLocked(canvas)) {
+                return;
+            }
+
             boolean paletteIsReal = palette != null && !palette.isEmpty() && palette.getItem() == Items.ITEM_PALETTE.get();
 
             if (Config.dyeCostEnabled() && paletteIsReal && !pl.isCreative()) {
-                palette.set(Items.PALETTE_CHARGES.get(), new Items.PaletteCharges(msg.basicColorsCharges()));
+                CanvasUpdateUtils.consumePaletteCharges(palette, msg.basicColorsCharges());
             }
 
             canvas.set(Items.CANVAS_PIXELS.get(), Arrays.stream(msg.pixels()).boxed().toList());
             canvas.set(Items.CANVAS_ID.get(), msg.canvasId());
             canvas.set(Items.CANVAS_VERSION.get(), msg.version());
             canvas.set(Items.CANVAS_GENERATION.get(), 0);
+            canvas.set(Items.CANVAS_SIDES_ACTIVE.get(), msg.sidesActive());
+            if (msg.sidePixels().length == CanvasSides.count(((ItemCanvas) canvas.getItem()).getCanvasType())) {
+                canvas.set(Items.CANVAS_SIDE_PIXELS.get(), Arrays.stream(msg.sidePixels()).boxed().toList());
+            }
 
             if (entityEasel instanceof EntityEasel easel) {
                 easel.setItem(canvas, false);

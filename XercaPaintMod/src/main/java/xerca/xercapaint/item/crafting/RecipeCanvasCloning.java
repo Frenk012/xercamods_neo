@@ -20,6 +20,13 @@ public class RecipeCanvasCloning extends CustomRecipe {
     }
 
     /**
+     * Two canvases clone together only if they share both size and material
+     */
+    private static boolean sameKind(ItemCanvas a, ItemCanvas b) {
+        return a.getCanvasType() == b.getCanvasType() && a.isGlass() == b.isGlass();
+    }
+
+    /**
      * Used to check if a recipe matches current crafting inventory
      */
     @Override
@@ -34,7 +41,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     if (!orgCanvas.isEmpty()) {
                         return false;
                     }
-                    if (!freshCanvas.isEmpty() && !((ItemCanvas) freshCanvas.getItem()).getCanvasType().equals(((ItemCanvas) stack.getItem()).getCanvasType())) {
+                    if (!freshCanvas.isEmpty() && !sameKind((ItemCanvas) freshCanvas.getItem(), (ItemCanvas) stack.getItem())) {
                         return false;
                     }
 
@@ -43,7 +50,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     if (!freshCanvas.isEmpty()) {
                         return false;
                     }
-                    if (!orgCanvas.isEmpty() && !((ItemCanvas) orgCanvas.getItem()).getCanvasType().equals(((ItemCanvas) stack.getItem()).getCanvasType())) {
+                    if (!orgCanvas.isEmpty() && !sameKind((ItemCanvas) orgCanvas.getItem(), (ItemCanvas) stack.getItem())) {
                         return false;
                     }
 
@@ -70,7 +77,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     if (!orgCanvas.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
-                    if (!freshCanvas.isEmpty() && !((ItemCanvas) freshCanvas.getItem()).getCanvasType().equals(((ItemCanvas) stack.getItem()).getCanvasType())) {
+                    if (!freshCanvas.isEmpty() && !sameKind((ItemCanvas) freshCanvas.getItem(), (ItemCanvas) stack.getItem())) {
                         return ItemStack.EMPTY;
                     }
 
@@ -79,7 +86,7 @@ public class RecipeCanvasCloning extends CustomRecipe {
                     if (!freshCanvas.isEmpty()) {
                         return ItemStack.EMPTY;
                     }
-                    if (!orgCanvas.isEmpty() && !((ItemCanvas) orgCanvas.getItem()).getCanvasType().equals(((ItemCanvas) stack.getItem()).getCanvasType())) {
+                    if (!orgCanvas.isEmpty() && !sameKind((ItemCanvas) orgCanvas.getItem(), (ItemCanvas) stack.getItem())) {
                         return ItemStack.EMPTY;
                     }
 
@@ -97,6 +104,11 @@ public class RecipeCanvasCloning extends CustomRecipe {
             resultStack.set(Items.CANVAS_VERSION.get(), orgCanvas.get(Items.CANVAS_VERSION.get()));
             resultStack.set(Items.CANVAS_TITLE.get(), orgCanvas.get(Items.CANVAS_TITLE.get()));
             resultStack.set(Items.CANVAS_AUTHOR.get(), orgCanvas.get(Items.CANVAS_AUTHOR.get()));
+            if (orgCanvas.get(Items.CANVAS_SIDE_PIXELS.get()) != null) {
+                resultStack.set(Items.CANVAS_SIDES_ACTIVE.get(), orgCanvas.getOrDefault(Items.CANVAS_SIDES_ACTIVE.get(), false));
+                resultStack.set(Items.CANVAS_SIDE_PIXELS.get(), orgCanvas.get(Items.CANVAS_SIDE_PIXELS.get()));
+            }
+            ItemCanvas.updateStackSize(resultStack);
             return resultStack;
         } else {
             return ItemStack.EMPTY;
