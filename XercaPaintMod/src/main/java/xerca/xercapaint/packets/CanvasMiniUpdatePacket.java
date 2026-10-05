@@ -6,9 +6,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
 import xerca.xercapaint.CanvasType;
 import xerca.xercapaint.Mod;
+import xerca.xercapaint.item.Items;
 
 public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version, int easelId,
-                                     CanvasType canvasType) implements CustomPacketPayload {
+                                     CanvasType canvasType, int[] basicColorsCharges) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CanvasMiniUpdatePacket> TYPE = new CustomPacketPayload.Type<>(Mod.id("canvas_mini_update"));
     public static final StreamCodec<FriendlyByteBuf, CanvasMiniUpdatePacket> STREAM_CODEC = StreamCodec.ofMember(CanvasMiniUpdatePacket::encode, CanvasMiniUpdatePacket::decode);
 
@@ -18,6 +19,7 @@ public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version,
         buf.writeInt(version);
         buf.writeUtf(canvasId);
         buf.writeVarIntArray(pixels);
+        buf.writeVarIntArray(basicColorsCharges);
         return buf;
     }
 
@@ -29,7 +31,8 @@ public record CanvasMiniUpdatePacket(int[] pixels, String canvasId, int version,
         String canvasId = buf.readUtf(64);
         int area = CanvasType.getHeight(canvasType) * CanvasType.getWidth(canvasType);
         int[] pixels = buf.readVarIntArray(area);
-        return new CanvasMiniUpdatePacket(pixels, canvasId, version, easalId, canvasType);
+        int[] basicColorsCharges = buf.readVarIntArray(Items.BasicColors.SIZE);
+        return new CanvasMiniUpdatePacket(pixels, canvasId, version, easalId, canvasType, basicColorsCharges);
     }
 
     @Override

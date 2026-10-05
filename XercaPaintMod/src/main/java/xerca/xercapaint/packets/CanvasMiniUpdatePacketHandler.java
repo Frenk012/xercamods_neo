@@ -1,47 +1,34 @@
 package xerca.xercapaint.packets;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xerca.xercapaint.Config;
 import xerca.xercapaint.Mod;
 import xerca.xercapaint.entity.EntityEasel;
 import xerca.xercapaint.item.ItemCanvas;
-import xerca.xercapaint.item.ItemPalette;
 import xerca.xercapaint.item.Items;
 
 import java.util.Arrays;
 
 public class CanvasMiniUpdatePacketHandler {
     public static void processMessage(CanvasMiniUpdatePacket msg, ServerPlayer pl) {
-        ItemStack canvas;
-        ItemStack palette;
-        Entity entityEasel = null;
-
-        if (msg.easelId() > -1) {
-            entityEasel = pl.level().getEntity(msg.easelId());
-            if (entityEasel == null) {
-                Mod.LOGGER.error("CanvasMiniUpdatePacket: Easel entity not found! easelId: {}", msg.easelId());
-                return;
-            }
-            if (!(entityEasel instanceof EntityEasel easel)) {
-                Mod.LOGGER.error("CanvasMiniUpdatePacket: Entity found is not an easel! easelId: {}", msg.easelId());
-                return;
-            }
-            canvas = easel.getItem();
-            if (!(canvas.getItem() instanceof ItemCanvas)) {
-                Mod.LOGGER.error("CanvasMiniUpdatePacket: Canvas not found inside easel!");
-                return;
-            }
-        } else {
-            canvas = pl.getMainHandItem();
-            palette = pl.getOffhandItem();
-            if (canvas.getItem() instanceof ItemPalette) {
-                canvas = palette;
-            }
+        EntityEasel entityEasel = CanvasUpdateUtils.getEntityEasel(pl, msg.easelId());
+        if (msg.easelId() > -1 && entityEasel == null) {
+            Mod.LOGGER.error("CanvasMiniUpdatePacketHandler: Easel entity not found! easelId: {}", msg.easelId());
+            return;
         }
 
-        if (!canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
+        ItemStack canvas = CanvasUpdateUtils.getCanvas(pl, entityEasel);
+        ItemStack palette = CanvasUpdateUtils.getPalette(pl);
+
+        if (canvas != null && !canvas.isEmpty() && canvas.getItem() instanceof ItemCanvas) {
+            boolean paletteIsReal = palette != null && !palette.isEmpty() && palette.getItem() == Items.ITEM_PALETTE.get();
+
+            if (Config.dyeCostEnabled() && paletteIsReal && !pl.isCreative()) {
+                palette.set(Items.PALETTE_CHARGES.get(), new Items.PaletteCharges(msg.basicColorsCharges()));
+            }
+
             canvas.set(Items.CANVAS_PIXELS.get(), Arrays.stream(msg.pixels()).boxed().toList());
             canvas.set(Items.CANVAS_ID.get(), msg.canvasId());
             canvas.set(Items.CANVAS_VERSION.get(), msg.version());

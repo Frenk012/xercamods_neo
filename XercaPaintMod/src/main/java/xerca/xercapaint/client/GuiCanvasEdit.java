@@ -7,7 +7,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +16,7 @@ import net.minecraft.world.phys.Vec2;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import xerca.xercapaint.CanvasType;
+import xerca.xercapaint.Config;
 import xerca.xercapaint.PaletteUtil;
 import xerca.xercapaint.SoundEvents;
 import xerca.xercapaint.entity.EntityEasel;
@@ -92,7 +92,7 @@ public class GuiCanvasEdit extends BasePalette {
     private final Deque<int[]> undoStack = new ArrayDeque<>(maxUndoLength);
 
     protected GuiCanvasEdit(Player player, ItemStack canvasStack, ItemStack paletteStack, Component title, CanvasType canvasType, EntityEasel easel) {
-        super(title, paletteStack);
+        super(title, paletteStack, Config.dyeCostEnabled() && !player.isCreative());
         updateCount = 0;
 
         this.canvasType = canvasType;
@@ -199,10 +199,14 @@ public class GuiCanvasEdit extends BasePalette {
     }
 
     private void setPixelAt(int x, int y, PaletteUtil.Color color, float opacity) {
-        if (x >= 0 && y >= 0 && x < canvasPixelWidth && y < canvasPixelHeight) {
+        if (x >= 0 && y >= 0 && x < canvasPixelWidth && y < canvasPixelHeight && hasSelectedColor()) {
             if (!draggedPoints.contains(y * canvasPixelWidth + x)) {
                 draggedPoints.add(y * canvasPixelWidth + x);
-                this.pixels[y * canvasPixelWidth + x] = PaletteUtil.Color.mix(color, new PaletteUtil.Color(this.pixels[y * canvasPixelWidth + x]), opacity).rgbVal();
+                PaletteUtil.Color newColor = PaletteUtil.Color.mix(color, new PaletteUtil.Color(this.pixels[y * canvasPixelWidth + x]), opacity);
+                if (newColor.rgbVal() != this.pixels[y * canvasPixelWidth + x]) {
+                    this.pixels[y * canvasPixelWidth + x] = newColor.rgbVal();
+                    useDyeCharge(opacity);
+                }
             }
         }
     }
@@ -325,7 +329,7 @@ public class GuiCanvasEdit extends BasePalette {
             // Draw brush meter
             for (int i = 0; i < 4; i++) {
                 int y = brushMeterY + i * brushSpriteSize;
-                guiGraphics.fill(brushMeterX, y, brushMeterX + 3, y + 3, currentColor.rgbVal());
+                guiGraphics.fill(brushMeterX, y, brushMeterX + 3, y + 3, getCurrentOrEmptyBrushColor().rgbVal());
             }
             guiGraphics.blit(paletteTextures, brushMeterX, brushMeterY + (3 - brushSize) * brushSpriteSize, 15, 246, 10, 10, 256, 256);
             guiGraphics.blit(paletteTextures, brushMeterX, brushMeterY, brushSpriteX, brushSpriteY - brushSpriteSize * 3, brushSpriteSize, brushSpriteSize * 4, 256, 256);
@@ -388,9 +392,11 @@ public class GuiCanvasEdit extends BasePalette {
             drawOutline(guiGraphics, mouseX, mouseY, 0);
             guiGraphics.blit(paletteTextures, mouseX, mouseY - colorPickerSize, colorPickerSpriteX, colorPickerSpriteY, colorPickerSize, colorPickerSize, 256, 256);
         } else {
-            drawOutline(guiGraphics, mouseX, mouseY, brushSize);
+            if (hasSelectedColor()) {
+                drawOutline(guiGraphics, mouseX, mouseY, brushSize);
+            }
 
-            guiGraphics.fill(mouseX, mouseY, mouseX + 3, mouseY + 3, currentColor.rgbVal());
+            guiGraphics.fill(mouseX, mouseY, mouseX + 3, mouseY + 3, getCurrentOrEmptyBrushColor().rgbVal());
 
             int trueBrushY = brushSpriteY - brushSpriteSize * brushSize;
             guiGraphics.blit(paletteTextures, mouseX, mouseY, brushSpriteX, trueBrushY, brushSpriteSize, brushSpriteSize, 256, 256);
@@ -611,9 +617,9 @@ public class GuiCanvasEdit extends BasePalette {
 
     private void clickedCanvas(int mouseX, int mouseY, int mouseButton) {
         touchedCanvas = true;
-        if (mouseButton == GLFW_MOUSE_BUTTON_LEFT) {
+        if (mouseButton == GLFW_MOUSE_BUTTON_LEFT && hasSelectedColor()) {
             setPixelsAt(mouseX, mouseY, currentColor, brushSize, brushOpacities[brushOpacitySetting]);
-        } else if (mouseButton == GLFW_MOUSE_BUTTON_RIGHT) {
+        } else if (mouseButton == GLFW_MOUSE_BUTTON_RIGHT && Config.ALLOW_ERASE.isTrue()) {
             // "Erase" with right click
             setPixelsAt(mouseX, mouseY, PaletteUtil.Color.WHITE, brushSize, 1.0f);
         }
@@ -718,7 +724,7 @@ public class GuiCanvasEdit extends BasePalette {
             if (canvasDirty) {
                 version++;
                 int easelId = easel == null ? -1 : easel.getId();
-                PacketDistributor.sendToServer(new CanvasUpdatePacket(pixels, isSigned, canvasTitle, canvasId, version, easelId, customColors, canvasType));
+                PacketDistributor.sendToServer(new CanvasUpdatePacket(pixels, isSigned, canvasTitle, canvasId, version, easelId, customColors, canvasType, getBasicColorCharges()));
             } else {
                 if (easel != null) {
                     PacketDistributor.sendToServer(new EaselLeftPacket(easel.getId()));
@@ -734,7 +740,7 @@ public class GuiCanvasEdit extends BasePalette {
                     skippedUpdate = true;
                 } else {
                     version++;
-                    PacketDistributor.sendToServer(new CanvasMiniUpdatePacket(pixels, canvasId, version, easel.getId(), canvasType));
+                    PacketDistributor.sendToServer(new CanvasMiniUpdatePacket(pixels, canvasId, version, easel.getId(), canvasType, getBasicColorCharges()));
                     canvasDirty = false;
                     timeSinceLastUpdate = 0;
                 }

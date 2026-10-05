@@ -2,8 +2,12 @@ package xerca.xercapaint;
 
 import net.minecraft.network.FriendlyByteBuf;
 
+import java.util.Map;
+
 public class PaletteUtil {
-    public static final Color EMPTINESS_COLOR = new Color(255, 236, 229);
+    public static final Color EMPTINESS_COLOR = new Color(235, 216, 209);
+
+    private static final Map<String, int[]> cache = new LRUCache<>(50);
 
     /** The 16 basic palette colors, indexed 0..15. Shared source of truth for client rendering and server charge accounting. */
     public static final Color[] BASIC_COLORS = {
@@ -30,6 +34,20 @@ public class PaletteUtil {
         double dg = c.g - g;
         double db = c.b - b;
         return dr * dr + dg * dg + db * db;
+    }
+
+    public static int[] estimateCompositionCache(int rgb, boolean[] available) {
+        return cache.computeIfAbsent(cacheKey(rgb, available), key -> PaletteUtil.estimateComposition(rgb, available));
+    }
+
+    private static String cacheKey(int rgb, boolean[] available) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(rgb & 0xFFFFFF);
+        sb.append("-");
+        for (boolean b : available) {
+            sb.append(b ? '1' : '0');
+        }
+        return sb.toString();
     }
 
     /**
@@ -97,6 +115,11 @@ public class PaletteUtil {
                 counts[nearest] = 1;
             }
         }
+
+        if (bestErr > 3000) {
+            return new int[16];
+        }
+
         return counts;
     }
 
